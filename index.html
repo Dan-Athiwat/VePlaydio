@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>V-Tok Pro (Server Real)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        /* --- THEME & UI (Deep Ocean Glass) --- */
+        :root {
+            --bg-dark: #0f172a;
+            --glass: rgba(30, 41, 59, 0.7);
+            --accent: #38bdf8; /* สีฟ้าสว่าง (ต่างจาก TikTok Red) */
+            --text: #f8fafc;
+            --nav-height: 65px;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            margin: 0; background-color: var(--bg-dark); color: var(--text);
+            font-family: 'Kanit', sans-serif; overflow: hidden; height: 100vh;
+            display: flex; flex-direction: column;
+        }
+
+        /* --- VIDEO FEED --- */
+        #feed-container {
+            flex: 1; overflow-y: scroll; scroll-snap-type: y mandatory;
+            scrollbar-width: none; position: relative;
+        }
+        #feed-container::-webkit-scrollbar { display: none; }
+
+        .video-card {
+            width: 100%; height: 100%;
+            scroll-snap-align: start; position: relative; background: #000;
+        }
+
+        video { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+        /* --- OVERLAYS (Right Actions) --- */
+        .right-actions {
+            position: absolute; right: 10px; bottom: 100px;
+            display: flex; flex-direction: column; gap: 20px; align-items: center;
+            z-index: 10;
+        }
+        
+        .action-btn {
+            width: 50px; height: 50px;
+            background: rgba(255,255,255,0.1); backdrop-filter: blur(5px);
+            border-radius: 50%; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; cursor: pointer;
+            transition: 0.2s; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .action-btn:active { transform: scale(0.9); background: var(--accent); }
+        .action-btn span { font-size: 10px; margin-top: 2px; text-shadow: 1px 1px 2px black; }
+        .action-btn i { font-size: 20px; drop-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+
+        /* --- BOTTOM INFO --- */
+        .bottom-info {
+            position: absolute; bottom: 0; left: 0; width: 100%;
+            padding: 20px; padding-bottom: 80px;
+            background: linear-gradient(to top, rgba(15,23,42,0.9), transparent);
+            pointer-events: none; /* ให้กดทะลุได้ */
+        }
+        .user-tag { font-weight: bold; font-size: 1.1rem; color: var(--accent); margin-bottom: 5px; }
+        
+        /* --- NAVIGATION --- */
+        .navbar {
+            position: fixed; bottom: 0; left: 0; width: 100%; height: var(--nav-height);
+            background: var(--glass); backdrop-filter: blur(10px);
+            border-top: 1px solid rgba(255,255,255,0.1);
+            display: flex; justify-content: space-around; align-items: center;
+            z-index: 100;
+        }
+        .nav-item { font-size: 24px; color: #94a3b8; cursor: pointer; position: relative;}
+        .nav-item.active { color: var(--accent); }
+        
+        /* ปุ่ม Upload ตรงกลาง */
+        .nav-upload {
+            width: 50px; height: 50px; background: var(--accent);
+            border-radius: 15px; display: flex; justify-content: center; align-items: center;
+            color: #fff; box-shadow: 0 0 15px rgba(56, 189, 248, 0.4);
+            transform: translateY(-10px);
+        }
+
+        /* --- SEARCH PAGE (Overlay) --- */
+        #search-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg-dark); z-index: 200; display: none;
+            flex-direction: column; padding: 20px;
+        }
+        .search-header { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+        .search-bar {
+            flex: 1; background: #1e293b; border: none; padding: 12px;
+            border-radius: 8px; color: white; font-family: 'Kanit';
+        }
+        .history-item {
+            padding: 10px; border-bottom: 1px solid #334155; color: #cbd5e1;
+            display: flex; justify-content: space-between;
+        }
+
+        /* --- MODALS --- */
+        .modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); z-index: 1000;
+            justify-content: center; align-items: center;
+        }
+        .modal-box { background: #1e293b; padding: 25px; border-radius: 16px; width: 85%; text-align: center; border: 1px solid #334155; }
+        .btn { padding: 10px; width: 100%; border-radius: 8px; border: none; font-weight: bold; margin-top: 10px; cursor: pointer; }
+        .btn-primary { background: var(--accent); color: #0f172a; }
+        .btn-ghost { background: transparent; color: #94a3b8; }
+        
+        .loader { width: 30px; height: 30px; border: 3px solid #fff; border-top: 3px solid var(--accent); border-radius: 50%; animation: spin 1s infinite; margin: 10px auto; display:none; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+    </style>
+</head>
+<body>
+
+    <div id="feed-container"></div>
+
+    <div class="navbar">
+        <div class="nav-item active" onclick="location.reload()"><i class="fas fa-home"></i></div>
+        <div class="nav-item" onclick="openSearch()"><i class="fas fa-search"></i></div>
+        <div class="nav-upload" onclick="checkAuthAndUpload()"><i class="fas fa-plus"></i></div>
+        <div class="nav-item" onclick="alert('กล่องข้อความ (กำลังพัฒนาในเวอร์ชันหน้า)')"><i class="fas fa-comment-alt"></i></div>
+        <div class="nav-item" onclick="checkAuth()"><i class="fas fa-user"></i></div>
+    </div>
+
+    <div id="search-overlay">
+        <div class="search-header">
+            <button onclick="closeSearch()" style="background:none; border:none; color:white; font-size:20px;"><i class="fas fa-arrow-left"></i></button>
+            <input type="text" class="search-bar" id="search-input" placeholder="ค้นหาผู้ใช้ หรือ แฮชแท็ก...">
+            <button onclick="performSearch()" style="background:none; border:none; color:var(--accent);"><i class="fas fa-search"></i></button>
+        </div>
+        <div style="font-size:14px; color:#64748b; margin-bottom:10px;">ประวัติการค้นหาล่าสุด</div>
+        <div id="search-history-list">
+            </div>
+        <div id="search-results" style="margin-top:20px;"></div>
+    </div>
+
+    <div id="login-modal" class="modal">
+        <div class="modal-box">
+            <h2>เข้าสู่ระบบ V-Tok</h2>
+            <button class="btn btn-primary" onclick="loginGoogle()"><i class="fab fa-google"></i> Login with Google</button>
+            <button class="btn btn-ghost" onclick="closeModal('login-modal')">ยกเลิก</button>
+        </div>
+    </div>
+
+    <div id="upload-modal" class="modal">
+        <div class="modal-box">
+            <h3>อัปโหลดคลิป</h3>
+            <input type="file" id="video-file" accept="video/*" style="color:white; margin:10px 0;">
+            <input type="text" id="video-desc" placeholder="#hashtag คำอธิบาย..." style="width:100%; padding:10px; border-radius:8px; border:none;">
+            <div class="loader" id="upload-loader"></div>
+            <button class="btn btn-primary" onclick="uploadClip()">โพสต์เลย</button>
+            <button class="btn btn-ghost" onclick="closeModal('upload-modal')">ยกเลิก</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+        import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit, where, updateDoc, doc, increment } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-storage.js";
+
+        // --- SETUP FIREBASE (ใส่ค่าของคุณตรงนี้) ---
+        // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyB575txzpvEoiUPGAzMWmBIJ-AumUrPZ04",
+  authDomain: "mychatapp-6553a.firebaseapp.com",
+  databaseURL: "https://mychatapp-6553a-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "mychatapp-6553a",
+  storageBucket: "mychatapp-6553a.firebasestorage.app",
+  messagingSenderId: "327022378740",
+  appId: "1:327022378740:web:381b0688ed36b48a90e8a1",
+  measurementId: "G-X4LL87Q0Z4"
+};
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const storage = getStorage(app);
+        const provider = new GoogleAuthProvider();
+        let currentUser = null;
+
+        // --- AUTH SYSTEM ---
+        onAuthStateChanged(auth, (user) => {
+            currentUser = user;
+        });
+
+        window.loginGoogle = async () => {
+            try { await signInWithPopup(auth, provider); closeModal('login-modal'); }
+            catch (e) { alert(e.message); }
+        };
+
+        window.checkAuth = () => { if (!currentUser) openModal('login-modal'); else alert(`สวัสดี ${currentUser.displayName}`); };
+        window.checkAuthAndUpload = () => { if (!currentUser) openModal('login-modal'); else openModal('upload-modal'); };
+        
+        // --- MODAL HELPERS ---
+        window.openModal = (id) => document.getElementById(id).style.display = 'flex';
+        window.closeModal = (id) => document.getElementById(id).style.display = 'none';
+
+        // --- FEED SYSTEM ---
+        async function loadFeed() {
+            const container = document.getElementById('feed-container');
+            const q = query(collection(db, "vtok_posts"), orderBy("createdAt", "desc"), limit(10));
+            const snapshot = await getDocs(q);
+
+            if (snapshot.empty) container.innerHTML = "<div style='text-align:center; padding-top:50%;'>ยังไม่มีคลิป</div>";
+
+            snapshot.forEach(docSnap => {
+                const data = docSnap.data();
+                container.appendChild(createVideoCard(data, docSnap.id));
+            });
+        }
+
+        function createVideoCard(data, id) {
+            const div = document.createElement('div');
+            div.className = 'video-card';
+            div.innerHTML = `
+                <video src="${data.videoUrl}" loop playsinline onclick="this.paused ? this.play() : this.pause()"></video>
+                <div class="right-actions">
+                    <div class="action-btn" onclick="toggleLike('${id}')"><i class="fas fa-heart"></i><span>${data.likes || 0}</span></div>
+                    <div class="action-btn"><i class="fas fa-comment-dots"></i><span>Comment</span></div>
+                    <div class="action-btn" onclick="saveVideo('${data.videoUrl}', '${id}')"><i class="fas fa-download"></i><span>Save</span></div>
+                </div>
+                <div class="bottom-info">
+                    <div class="user-tag">@${data.username}</div>
+                    <div>${data.desc}</div>
+                </div>
+            `;
+            return div;
+        }
+
+        // --- UPLOAD SYSTEM ---
+        window.uploadClip = async () => {
+            const file = document.getElementById('video-file').files[0];
+            const desc = document.getElementById('video-desc').value;
+            const loader = document.getElementById('upload-loader');
+            
+            if(!file) return alert("เลือกไฟล์ก่อนครับ");
+            loader.style.display = 'block';
+
+            try {
+                const storageRef = ref(storage, `clips/${Date.now()}_${currentUser.uid}`);
+                await uploadBytes(storageRef, file);
+                const url = await getDownloadURL(storageRef);
+
+                await addDoc(collection(db, "vtok_posts"), {
+                    uid: currentUser.uid,
+                    username: currentUser.displayName,
+                    videoUrl: url,
+                    desc: desc,
+                    likes: 0,
+                    createdAt: Date.now()
+                });
+                location.reload();
+            } catch (e) { alert(e.message); } 
+            finally { loader.style.display = 'none'; }
+        };
+
+        // --- SEARCH & HISTORY SYSTEM (Local Storage) ---
+        window.openSearch = () => {
+            document.getElementById('search-overlay').style.display = 'flex';
+            loadSearchHistory();
+        };
+        window.closeSearch = () => document.getElementById('search-overlay').style.display = 'none';
+
+        window.loadSearchHistory = () => {
+            const history = JSON.parse(localStorage.getItem('searchHistory') || '[]');
+            const list = document.getElementById('search-history-list');
+            list.innerHTML = "";
+            history.forEach(text => {
+                list.innerHTML += `<div class="history-item" onclick="useHistory('${text}')">
+                    <span><i class="fas fa-history"></i> ${text}</span>
+                    <i class="fas fa-times" onclick="deleteHistory('${text}', event)"></i>
+                </div>`;
+            });
+        };
+
+        window.performSearch = () => {
+            const text = document.getElementById('search-input').value;
+            if(!text) return;
+            
+            // Save History
+            let history = JSON.parse(localStorage.getItem('searchHistory') || '[]');
+            if(!history.includes(text)) {
+                history.unshift(text);
+                if(history.length > 5) history.pop(); // Keep only 5
+                localStorage.setItem('searchHistory', JSON.stringify(history));
+            }
+            loadSearchHistory();
+            
+            // Mock Search Result (In Real app needs Algolia or detailed query)
+            document.getElementById('search-results').innerHTML = `<div style="text-align:center; color:#accent;">กำลังค้นหา "${text}"... <br>(ระบบค้นหากำลังเชื่อมต่อฐานข้อมูล)</div>`;
+        };
+        
+        window.useHistory = (text) => {
+            document.getElementById('search-input').value = text;
+            performSearch();
+        };
+
+        window.deleteHistory = (text, e) => {
+            e.stopPropagation();
+            let history = JSON.parse(localStorage.getItem('searchHistory') || '[]');
+            history = history.filter(item => item !== text);
+            localStorage.setItem('searchHistory', JSON.stringify(history));
+            loadSearchHistory();
+        };
+
+        // --- DOWNLOAD / SAVE VIDEO SYSTEM ---
+        window.saveVideo = async (url, id) => {
+            alert("กำลังเตรียมดาวน์โหลด...");
+            try {
+                const response = await fetch(url);
+                const blob = await response.blob();
+                const blobUrl = window.URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.href = blobUrl;
+                a.download = `vtok_clip_${id}.mp4`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(blobUrl);
+            } catch (error) {
+                alert("ไม่สามารถดาวน์โหลดได้ (CORS Policy อาจบล็อกในบาง Server)");
+                // Fallback: เปิด tab ใหม่
+                window.open(url, '_blank');
+            }
+        };
+
+        // Start App
+        loadFeed();
+
+    </script>
+</body>
+</html>
