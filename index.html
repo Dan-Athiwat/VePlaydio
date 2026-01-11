@@ -3,172 +3,165 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>V-Tok Pro (Server Real)</title>
+    <title>V-Tok Ultimate</title>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
-        /* --- THEME & UI (Deep Ocean Glass) --- */
+        /* --- CORE THEME --- */
         :root {
-            --bg-dark: #0f172a;
-            --glass: rgba(30, 41, 59, 0.7);
-            --accent: #38bdf8; /* สีฟ้าสว่าง (ต่างจาก TikTok Red) */
-            --text: #f8fafc;
-            --nav-height: 65px;
+            --bg: #0f172a;
+            --glass: rgba(30, 41, 59, 0.95);
+            --accent: #38bdf8;
+            --accent-story: #c026d3; /* สีม่วงสำหรับ Story */
+            --text: #fff;
+            --gray: #94a3b8;
         }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
+        body { margin: 0; background: var(--bg); color: var(--text); font-family: 'Kanit'; overflow: hidden; height: 100vh; display: flex; flex-direction: column; }
 
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-
-        body {
-            margin: 0; background-color: var(--bg-dark); color: var(--text);
-            font-family: 'Kanit', sans-serif; overflow: hidden; height: 100vh;
-            display: flex; flex-direction: column;
-        }
-
-        /* --- VIDEO FEED --- */
-        #feed-container {
-            flex: 1; overflow-y: scroll; scroll-snap-type: y mandatory;
-            scrollbar-width: none; position: relative;
-        }
-        #feed-container::-webkit-scrollbar { display: none; }
-
-        .video-card {
-            width: 100%; height: 100%;
-            scroll-snap-align: start; position: relative; background: #000;
-        }
-
+        /* --- PAGES MANAGE --- */
+        .page { position: absolute; top:0; left:0; width:100%; height:100%; display: none; background: var(--bg); overflow-y: auto; }
+        .page.active { display: block; }
+        
+        /* 1. FEED PAGE */
+        #feed-page { overflow-y: scroll; scroll-snap-type: y mandatory; scrollbar-width: none; background: #000; height: calc(100% - 60px); }
+        .video-card { width: 100%; height: 100%; scroll-snap-align: start; position: relative; background: #000; }
         video { width: 100%; height: 100%; object-fit: cover; display: block; }
-
-        /* --- OVERLAYS (Right Actions) --- */
-        .right-actions {
-            position: absolute; right: 10px; bottom: 100px;
-            display: flex; flex-direction: column; gap: 20px; align-items: center;
-            z-index: 10;
-        }
         
-        .action-btn {
-            width: 50px; height: 50px;
-            background: rgba(255,255,255,0.1); backdrop-filter: blur(5px);
-            border-radius: 50%; display: flex; flex-direction: column;
-            justify-content: center; align-items: center; cursor: pointer;
-            transition: 0.2s; border: 1px solid rgba(255,255,255,0.1);
-        }
-        .action-btn:active { transform: scale(0.9); background: var(--accent); }
-        .action-btn span { font-size: 10px; margin-top: 2px; text-shadow: 1px 1px 2px black; }
-        .action-btn i { font-size: 20px; drop-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+        /* Feed Overlay UI */
+        .right-actions { position: absolute; right: 10px; bottom: 100px; display: flex; flex-direction: column; gap: 20px; align-items: center; z-index: 10; }
+        .avatar-feed { width: 45px; height: 45px; border-radius: 50%; border: 2px solid #fff; object-fit: cover; margin-bottom: -10px; z-index: 2; cursor: pointer; }
+        .follow-plus { width: 20px; height: 20px; background: var(--accent); border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 12px; transform: translateY(-50%); z-index: 3; color: #000; }
+        .action-btn { font-size: 28px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); display: flex; flex-direction: column; align-items: center; cursor: pointer; }
+        .action-btn span { font-size: 12px; margin-top: 5px; font-weight: 600; }
+        .bottom-info { position: absolute; bottom: 0; left: 0; width: 100%; padding: 20px 20px 80px 20px; background: linear-gradient(transparent, rgba(0,0,0,0.9)); pointer-events: none; }
+        .username-tag { font-weight: bold; font-size: 1.1rem; margin-bottom: 5px; cursor: pointer; pointer-events: auto; display: inline-block;}
 
-        /* --- BOTTOM INFO --- */
-        .bottom-info {
-            position: absolute; bottom: 0; left: 0; width: 100%;
-            padding: 20px; padding-bottom: 80px;
-            background: linear-gradient(to top, rgba(15,23,42,0.9), transparent);
-            pointer-events: none; /* ให้กดทะลุได้ */
-        }
-        .user-tag { font-weight: bold; font-size: 1.1rem; color: var(--accent); margin-bottom: 5px; }
+        /* 2. PROFILE PAGE */
+        #profile-page { padding-bottom: 70px; }
+        .profile-header { padding: 40px 20px 20px; text-align: center; background: var(--glass); }
+        .profile-img-container { position: relative; display: inline-block; margin-bottom: 15px; }
+        .profile-img { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 3px solid var(--bg); }
+        .story-ring { border: 3px solid var(--accent-story); padding: 3px; }
+        .stats-row { display: flex; justify-content: center; gap: 30px; margin: 15px 0; }
+        .stat-box { text-align: center; }
+        .stat-num { font-weight: bold; font-size: 1.2rem; display: block; }
+        .stat-label { font-size: 0.8rem; color: var(--gray); }
         
-        /* --- NAVIGATION --- */
-        .navbar {
-            position: fixed; bottom: 0; left: 0; width: 100%; height: var(--nav-height);
-            background: var(--glass); backdrop-filter: blur(10px);
-            border-top: 1px solid rgba(255,255,255,0.1);
-            display: flex; justify-content: space-around; align-items: center;
-            z-index: 100;
-        }
-        .nav-item { font-size: 24px; color: #94a3b8; cursor: pointer; position: relative;}
-        .nav-item.active { color: var(--accent); }
-        
-        /* ปุ่ม Upload ตรงกลาง */
-        .nav-upload {
-            width: 50px; height: 50px; background: var(--accent);
-            border-radius: 15px; display: flex; justify-content: center; align-items: center;
-            color: #fff; box-shadow: 0 0 15px rgba(56, 189, 248, 0.4);
-            transform: translateY(-10px);
-        }
+        .profile-actions { display: flex; justify-content: center; gap: 10px; margin-top: 15px; }
+        .btn-profile { padding: 8px 24px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.1); color: white; font-weight: 600; cursor: pointer; }
+        .btn-red { background: var(--accent); color: #000; border: none; }
 
-        /* --- SEARCH PAGE (Overlay) --- */
-        #search-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--bg-dark); z-index: 200; display: none;
-            flex-direction: column; padding: 20px;
-        }
-        .search-header { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
-        .search-bar {
-            flex: 1; background: #1e293b; border: none; padding: 12px;
-            border-radius: 8px; color: white; font-family: 'Kanit';
-        }
-        .history-item {
-            padding: 10px; border-bottom: 1px solid #334155; color: #cbd5e1;
-            display: flex; justify-content: space-between;
-        }
+        .video-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; margin-top: 1px; }
+        .grid-item { aspect-ratio: 9/16; background: #222; position: relative; cursor: pointer; overflow: hidden; }
+        .grid-item img, .grid-item video { width: 100%; height: 100%; object-fit: cover; }
+        .view-count { position: absolute; bottom: 5px; left: 5px; font-size: 10px; display: flex; align-items: center; gap: 3px; }
+
+        /* --- NAVBAR --- */
+        .navbar { position: fixed; bottom: 0; width: 100%; height: 60px; background: #000; border-top: 1px solid #333; display: flex; justify-content: space-around; align-items: center; z-index: 100; }
+        .nav-icon { color: #666; font-size: 24px; cursor: pointer; }
+        .nav-icon.active { color: #fff; }
+        .upload-btn { width: 45px; height: 30px; background: linear-gradient(to right, #25f4ee, #fe2c55); border-radius: 8px; display: flex; justify-content: center; align-items: center; }
+        .upload-btn i { color: #000; font-size: 14px; background: #fff; width: 35px; height: 100%; border-radius: 4px; display: flex; justify-content: center; align-items: center; margin: 0 5px;}
 
         /* --- MODALS --- */
-        .modal {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8); z-index: 1000;
-            justify-content: center; align-items: center;
-        }
-        .modal-box { background: #1e293b; padding: 25px; border-radius: 16px; width: 85%; text-align: center; border: 1px solid #334155; }
-        .btn { padding: 10px; width: 100%; border-radius: 8px; border: none; font-weight: bold; margin-top: 10px; cursor: pointer; }
-        .btn-primary { background: var(--accent); color: #0f172a; }
-        .btn-ghost { background: transparent; color: #94a3b8; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; justify-content: center; align-items: center; flex-direction: column; }
+        .modal-content { background: #1e293b; padding: 25px; border-radius: 15px; width: 85%; max-width: 400px; text-align: center; border: 1px solid #334155; }
+        input { width: 100%; background: #0f172a; border: 1px solid #334155; padding: 12px; margin: 10px 0; color: white; border-radius: 8px; }
         
-        .loader { width: 30px; height: 30px; border: 3px solid #fff; border-top: 3px solid var(--accent); border-radius: 50%; animation: spin 1s infinite; margin: 10px auto; display:none; }
-        @keyframes spin { 100% { transform: rotate(360deg); } }
+        /* Progress Bar Real */
+        .progress-container { width: 100%; height: 6px; background: #333; border-radius: 3px; margin: 15px 0; overflow: hidden; }
+        .progress-bar { width: 0%; height: 100%; background: var(--accent); transition: width 0.3s; }
+        .progress-text { font-size: 12px; color: var(--accent); margin-top: 5px; text-align: right; }
 
     </style>
 </head>
 <body>
 
-    <div id="feed-container"></div>
+    <div id="feed-page" class="page active">
+        </div>
+
+    <div id="profile-page" class="page">
+        <div class="profile-header">
+            <div style="position: absolute; top: 15px; left: 15px;" onclick="switchPage('feed-page')"><i class="fas fa-chevron-left"></i></div>
+            <div style="position: absolute; top: 15px; right: 15px;"><i class="fas fa-ellipsis-h"></i></div>
+            
+            <div class="profile-img-container">
+                <img id="p-img" src="" class="profile-img">
+            </div>
+            <h2 id="p-name" style="margin: 0;">-</h2>
+            <div id="p-bio" style="font-size: 12px; color: #aaa; margin-top: 5px;">@username</div>
+
+            <div class="stats-row">
+                <div class="stat-box"><span class="stat-num" id="p-following">0</span><span class="stat-label">กำลังติดตาม</span></div>
+                <div class="stat-box"><span class="stat-num" id="p-followers">0</span><span class="stat-label">ผู้ติดตาม</span></div>
+                <div class="stat-box"><span class="stat-num" id="p-likes">0</span><span class="stat-label">ถูกใจ</span></div>
+            </div>
+
+            <div class="profile-actions" id="p-actions">
+                </div>
+        </div>
+
+        <div class="video-grid" id="p-grid">
+            </div>
+    </div>
 
     <div class="navbar">
-        <div class="nav-item active" onclick="location.reload()"><i class="fas fa-home"></i></div>
-        <div class="nav-item" onclick="openSearch()"><i class="fas fa-search"></i></div>
-        <div class="nav-upload" onclick="checkAuthAndUpload()"><i class="fas fa-plus"></i></div>
-        <div class="nav-item" onclick="alert('กล่องข้อความ (กำลังพัฒนาในเวอร์ชันหน้า)')"><i class="fas fa-comment-alt"></i></div>
-        <div class="nav-item" onclick="checkAuth()"><i class="fas fa-user"></i></div>
-    </div>
-
-    <div id="search-overlay">
-        <div class="search-header">
-            <button onclick="closeSearch()" style="background:none; border:none; color:white; font-size:20px;"><i class="fas fa-arrow-left"></i></button>
-            <input type="text" class="search-bar" id="search-input" placeholder="ค้นหาผู้ใช้ หรือ แฮชแท็ก...">
-            <button onclick="performSearch()" style="background:none; border:none; color:var(--accent);"><i class="fas fa-search"></i></button>
-        </div>
-        <div style="font-size:14px; color:#64748b; margin-bottom:10px;">ประวัติการค้นหาล่าสุด</div>
-        <div id="search-history-list">
-            </div>
-        <div id="search-results" style="margin-top:20px;"></div>
-    </div>
-
-    <div id="login-modal" class="modal">
-        <div class="modal-box">
-            <h2>เข้าสู่ระบบ V-Tok</h2>
-            <button class="btn btn-primary" onclick="loginGoogle()"><i class="fab fa-google"></i> Login with Google</button>
-            <button class="btn btn-ghost" onclick="closeModal('login-modal')">ยกเลิก</button>
-        </div>
+        <div class="nav-icon active" onclick="switchPage('feed-page')"><i class="fas fa-home"></i></div>
+        <div class="nav-icon"><i class="fas fa-search"></i></div>
+        <div class="upload-btn" onclick="openUpload()"><i class="fas fa-plus"></i></div>
+        <div class="nav-icon"><i class="fas fa-inbox"></i></div>
+        <div class="nav-icon" onclick="openMyProfile()"><i class="far fa-user"></i></div>
     </div>
 
     <div id="upload-modal" class="modal">
-        <div class="modal-box">
-            <h3>อัปโหลดคลิป</h3>
-            <input type="file" id="video-file" accept="video/*" style="color:white; margin:10px 0;">
-            <input type="text" id="video-desc" placeholder="#hashtag คำอธิบาย..." style="width:100%; padding:10px; border-radius:8px; border:none;">
-            <div class="loader" id="upload-loader"></div>
-            <button class="btn btn-primary" onclick="uploadClip()">โพสต์เลย</button>
-            <button class="btn btn-ghost" onclick="closeModal('upload-modal')">ยกเลิก</button>
+        <div class="modal-content">
+            <h3>โพสต์คลิปใหม่</h3>
+            <input type="file" id="up-file" accept="video/*">
+            <input type="text" id="up-desc" placeholder="คำอธิบาย...">
+            <div style="text-align: left; margin: 10px 0;">
+                <input type="checkbox" id="up-story"> ลงเป็น Story (24 ชม.)
+            </div>
+            
+            <div id="progress-area" style="display:none;">
+                <div class="progress-container"><div class="progress-bar" id="prog-bar"></div></div>
+                <div class="progress-text" id="prog-text">0%</div>
+            </div>
+
+            <button class="btn-profile btn-red" onclick="startUpload()" style="width:100%">โพสต์</button>
+            <button class="btn-profile" onclick="closeModal('upload-modal')" style="background:transparent; margin-top:10px;">ยกเลิก</button>
+        </div>
+    </div>
+
+    <div id="edit-modal" class="modal">
+        <div class="modal-content">
+            <h3>แก้ไขโปรไฟล์</h3>
+            <p style="font-size:12px; color:#aaa;">เปลี่ยนชื่อได้ทุก 7 วัน</p>
+            <input type="text" id="edit-name" placeholder="ชื่อใหม่...">
+            <p style="font-size:12px; text-align:left;">รูปโปรไฟล์ (URL)</p>
+            <input type="text" id="edit-pic" placeholder="Link รูปภาพ...">
+            <button class="btn-profile btn-red" onclick="saveProfile()" style="width:100%">บันทึก</button>
+            <button class="btn-profile" onclick="closeModal('edit-modal')" style="background:transparent; margin-top:10px;">ยกเลิก</button>
+        </div>
+    </div>
+
+    <div id="login-modal" class="modal">
+        <div class="modal-content">
+            <h2>เข้าสู่ระบบ V-Tok</h2>
+            <button class="btn-profile btn-red" style="width:100%" onclick="loginGoogle()">Login with Google</button>
+            <button class="btn-profile" onclick="closeModal('login-modal')" style="margin-top:10px;">ดูแบบ Guest</button>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
-        import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit, where, updateDoc, doc, increment } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
-        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-storage.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+        import { getFirestore, collection, addDoc, getDocs, getDoc, setDoc, doc, query, orderBy, limit, where, updateDoc, increment } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+        import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-storage.js";
 
-        // --- SETUP FIREBASE (ใส่ค่าของคุณตรงนี้) ---
-        // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
+        // --- 1. FIREBASE CONFIG (ใส่ของคุณตรงนี้) ---
+        const firebaseConfig = {
   apiKey: "AIzaSyB575txzpvEoiUPGAzMWmBIJ-AumUrPZ04",
   authDomain: "mychatapp-6553a.firebaseapp.com",
   databaseURL: "https://mychatapp-6553a-default-rtdb.asia-southeast1.firebasedatabase.app",
@@ -183,158 +176,246 @@ const firebaseConfig = {
         const auth = getAuth(app);
         const db = getFirestore(app);
         const storage = getStorage(app);
-        const provider = new GoogleAuthProvider();
         let currentUser = null;
 
-        // --- AUTH SYSTEM ---
-        onAuthStateChanged(auth, (user) => {
-            currentUser = user;
+        // --- 2. AUTH & USER DATA SETUP ---
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                currentUser = user;
+                // สร้างข้อมูล User ใน DB ถ้ายังไม่มี
+                const userRef = doc(db, "users", user.uid);
+                const userSnap = await getDoc(userRef);
+                if (!userSnap.exists()) {
+                    await setDoc(userRef, {
+                        uid: user.uid,
+                        displayName: user.displayName,
+                        photoURL: user.photoURL,
+                        followers: 0,
+                        following: 0,
+                        likes: 0,
+                        lastInfoChange: 0 // timestamp
+                    });
+                }
+            } else {
+                currentUser = null;
+                document.getElementById('login-modal').style.display = 'flex';
+            }
         });
 
         window.loginGoogle = async () => {
-            try { await signInWithPopup(auth, provider); closeModal('login-modal'); }
-            catch (e) { alert(e.message); }
+            const provider = new GoogleAuthProvider();
+            try {
+                await signInWithPopup(auth, provider);
+                closeModal('login-modal');
+                location.reload();
+            } catch (e) { alert(e.message); }
         };
 
-        window.checkAuth = () => { if (!currentUser) openModal('login-modal'); else alert(`สวัสดี ${currentUser.displayName}`); };
-        window.checkAuthAndUpload = () => { if (!currentUser) openModal('login-modal'); else openModal('upload-modal'); };
+        // --- 3. PAGE NAVIGATION ---
+        window.switchPage = (pageId) => {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById(pageId).classList.add('active');
+        };
+
+        window.openMyProfile = () => {
+            if(!currentUser) return document.getElementById('login-modal').style.display = 'flex';
+            loadProfile(currentUser.uid);
+        };
+
+        // --- 4. PROFILE SYSTEM (CORE FEATURE) ---
+        window.loadProfile = async (targetUid) => {
+            switchPage('profile-page');
+            const isMe = currentUser && currentUser.uid === targetUid;
+            
+            // UI Loading
+            document.getElementById('p-name').innerText = "...";
+            document.getElementById('p-actions').innerHTML = "";
+            document.getElementById('p-grid').innerHTML = "";
+
+            // Fetch Data
+            const userSnap = await getDoc(doc(db, "users", targetUid));
+            if(!userSnap.exists()) return alert("User not found");
+            const userData = userSnap.data();
+
+            // Render Info
+            document.getElementById('p-name').innerText = userData.displayName;
+            document.getElementById('p-img').src = userData.photoURL || 'https://via.placeholder.com/100';
+            document.getElementById('p-followers').innerText = userData.followers || 0;
+            document.getElementById('p-following').innerText = userData.following || 0;
+            document.getElementById('p-likes').innerText = userData.likes || 0;
+
+            // Render Buttons (Me vs Others)
+            const actionsDiv = document.getElementById('p-actions');
+            if (isMe) {
+                actionsDiv.innerHTML = `<button class="btn-profile" onclick="openEditProfile()">แก้ไขโปรไฟล์</button>`;
+            } else {
+                // Check if already followed (Basic check via subcollection would be better, but simplified here)
+                actionsDiv.innerHTML = `<button class="btn-profile btn-red" onclick="followUser('${targetUid}')">ติดตาม</button>`;
+            }
+
+            // Render Grid (Load user's clips)
+            const q = query(collection(db, "posts"), where("uid", "==", targetUid), orderBy("timestamp", "desc"), limit(12));
+            const postsSnap = await getDocs(q);
+            
+            let gridHtml = "";
+            postsSnap.forEach(doc => {
+                const d = doc.data();
+                gridHtml += `
+                    <div class="grid-item" onclick="alert('กดเพื่อเล่นคลิป (ทำในเวอร์ชันถัดไป)')">
+                        <video src="${d.videoUrl}#t=0.1" preload="metadata"></video>
+                        <div class="view-count"><i class="fas fa-play"></i> ${d.likes * 10}</div>
+                    </div>`;
+            });
+            document.getElementById('p-grid').innerHTML = gridHtml || "<div style='grid-column:span 3; text-align:center; padding:20px; color:#555;'>ยังไม่มีคลิป</div>";
+        };
+
+        // --- 5. EDIT PROFILE (7 DAYS RULE) ---
+        window.openEditProfile = () => document.getElementById('edit-modal').style.display = 'flex';
         
-        // --- MODAL HELPERS ---
-        window.openModal = (id) => document.getElementById(id).style.display = 'flex';
-        window.closeModal = (id) => document.getElementById(id).style.display = 'none';
+        window.saveProfile = async () => {
+            if(!currentUser) return;
+            const newName = document.getElementById('edit-name').value;
+            const newPic = document.getElementById('edit-pic').value;
+            
+            const userRef = doc(db, "users", currentUser.uid);
+            const userSnap = await getDoc(userRef);
+            const lastChange = userSnap.data().lastInfoChange || 0;
+            const now = Date.now();
+            const sevenDays = 7 * 24 * 60 * 60 * 1000;
 
-        // --- FEED SYSTEM ---
+            // Check 7 Days Logic
+            if (newName && (now - lastChange < sevenDays)) {
+                return alert(`คุณเปลี่ยนชื่อไปแล้ว! รออีก ${Math.ceil((sevenDays - (now-lastChange))/(24*3600*1000))} วัน`);
+            }
+
+            try {
+                let updates = {};
+                if(newName) {
+                    updates.displayName = newName;
+                    updates.lastInfoChange = now;
+                    await updateProfile(currentUser, { displayName: newName });
+                }
+                if(newPic) {
+                    updates.photoURL = newPic;
+                    await updateProfile(currentUser, { photoURL: newPic });
+                }
+
+                await updateDoc(userRef, updates);
+                alert("บันทึกแล้ว!");
+                closeModal('edit-modal');
+                loadProfile(currentUser.uid); // Reload UI
+            } catch(e) { alert("Error: " + e.message); }
+        };
+
+        // --- 6. FOLLOW SYSTEM ---
+        window.followUser = async (targetUid) => {
+            if(!currentUser) return openModal('login-modal');
+            
+            // Note: In real production, check 'follows' collection first to avoid double follow
+            try {
+                // +1 Follower to Target
+                await updateDoc(doc(db, "users", targetUid), { followers: increment(1) });
+                // +1 Following to Me
+                await updateDoc(doc(db, "users", currentUser.uid), { following: increment(1) });
+                
+                alert("ติดตามแล้ว!");
+                loadProfile(targetUid); // Refresh stats
+            } catch(e) { console.error(e); }
+        };
+
+        // --- 7. UPLOAD SYSTEM (REAL PROGRESS BAR) ---
+        window.openUpload = () => {
+            if(!currentUser) return document.getElementById('login-modal').style.display='flex';
+            document.getElementById('upload-modal').style.display = 'flex';
+        };
+
+        window.startUpload = () => {
+            const file = document.getElementById('up-file').files[0];
+            const desc = document.getElementById('up-desc').value;
+            const isStory = document.getElementById('up-story').checked;
+            
+            if(!file) return alert("เลือกไฟล์ก่อน");
+
+            document.getElementById('progress-area').style.display = 'block';
+            
+            // Upload Task
+            const storageRef = ref(storage, `videos/${currentUser.uid}/${Date.now()}_${file.name}`);
+            const uploadTask = uploadBytesResumable(storageRef, file);
+
+            uploadTask.on('state_changed', 
+                (snapshot) => {
+                    // Progress Logic (0-100%)
+                    const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                    document.getElementById('prog-bar').style.width = progress + '%';
+                    document.getElementById('prog-text').innerText = Math.floor(progress) + '%';
+                }, 
+                (error) => alert(error.message), 
+                async () => {
+                    // Success
+                    const url = await getDownloadURL(uploadTask.snapshot.ref);
+                    await addDoc(collection(db, "posts"), {
+                        uid: currentUser.uid,
+                        username: currentUser.displayName,
+                        userPhoto: currentUser.photoURL,
+                        videoUrl: url,
+                        desc: desc,
+                        type: isStory ? 'story' : 'post',
+                        likes: 0,
+                        timestamp: Date.now()
+                    });
+                    
+                    alert("อัปโหลดเสร็จสมบูรณ์!");
+                    closeModal('upload-modal');
+                    location.reload();
+                }
+            );
+        };
+
+        // --- 8. FEED LOADER ---
         async function loadFeed() {
-            const container = document.getElementById('feed-container');
-            const q = query(collection(db, "vtok_posts"), orderBy("createdAt", "desc"), limit(10));
+            const container = document.getElementById('feed-page');
+            const q = query(collection(db, "posts"), orderBy("timestamp", "desc"), limit(10));
             const snapshot = await getDocs(q);
-
-            if (snapshot.empty) container.innerHTML = "<div style='text-align:center; padding-top:50%;'>ยังไม่มีคลิป</div>";
+            
+            if(snapshot.empty) { container.innerHTML="<div style='color:white; text-align:center; padding-top:50%;'>No videos yet</div>"; return; }
 
             snapshot.forEach(docSnap => {
                 const data = docSnap.data();
-                container.appendChild(createVideoCard(data, docSnap.id));
-            });
-        }
-
-        function createVideoCard(data, id) {
-            const div = document.createElement('div');
-            div.className = 'video-card';
-            div.innerHTML = `
-                <video src="${data.videoUrl}" loop playsinline onclick="this.paused ? this.play() : this.pause()"></video>
-                <div class="right-actions">
-                    <div class="action-btn" onclick="toggleLike('${id}')"><i class="fas fa-heart"></i><span>${data.likes || 0}</span></div>
-                    <div class="action-btn"><i class="fas fa-comment-dots"></i><span>Comment</span></div>
-                    <div class="action-btn" onclick="saveVideo('${data.videoUrl}', '${id}')"><i class="fas fa-download"></i><span>Save</span></div>
-                </div>
-                <div class="bottom-info">
-                    <div class="user-tag">@${data.username}</div>
-                    <div>${data.desc}</div>
-                </div>
-            `;
-            return div;
-        }
-
-        // --- UPLOAD SYSTEM ---
-        window.uploadClip = async () => {
-            const file = document.getElementById('video-file').files[0];
-            const desc = document.getElementById('video-desc').value;
-            const loader = document.getElementById('upload-loader');
-            
-            if(!file) return alert("เลือกไฟล์ก่อนครับ");
-            loader.style.display = 'block';
-
-            try {
-                const storageRef = ref(storage, `clips/${Date.now()}_${currentUser.uid}`);
-                await uploadBytes(storageRef, file);
-                const url = await getDownloadURL(storageRef);
-
-                await addDoc(collection(db, "vtok_posts"), {
-                    uid: currentUser.uid,
-                    username: currentUser.displayName,
-                    videoUrl: url,
-                    desc: desc,
-                    likes: 0,
-                    createdAt: Date.now()
-                });
-                location.reload();
-            } catch (e) { alert(e.message); } 
-            finally { loader.style.display = 'none'; }
-        };
-
-        // --- SEARCH & HISTORY SYSTEM (Local Storage) ---
-        window.openSearch = () => {
-            document.getElementById('search-overlay').style.display = 'flex';
-            loadSearchHistory();
-        };
-        window.closeSearch = () => document.getElementById('search-overlay').style.display = 'none';
-
-        window.loadSearchHistory = () => {
-            const history = JSON.parse(localStorage.getItem('searchHistory') || '[]');
-            const list = document.getElementById('search-history-list');
-            list.innerHTML = "";
-            history.forEach(text => {
-                list.innerHTML += `<div class="history-item" onclick="useHistory('${text}')">
-                    <span><i class="fas fa-history"></i> ${text}</span>
-                    <i class="fas fa-times" onclick="deleteHistory('${text}', event)"></i>
-                </div>`;
-            });
-        };
-
-        window.performSearch = () => {
-            const text = document.getElementById('search-input').value;
-            if(!text) return;
-            
-            // Save History
-            let history = JSON.parse(localStorage.getItem('searchHistory') || '[]');
-            if(!history.includes(text)) {
-                history.unshift(text);
-                if(history.length > 5) history.pop(); // Keep only 5
-                localStorage.setItem('searchHistory', JSON.stringify(history));
-            }
-            loadSearchHistory();
-            
-            // Mock Search Result (In Real app needs Algolia or detailed query)
-            document.getElementById('search-results').innerHTML = `<div style="text-align:center; color:#accent;">กำลังค้นหา "${text}"... <br>(ระบบค้นหากำลังเชื่อมต่อฐานข้อมูล)</div>`;
-        };
-        
-        window.useHistory = (text) => {
-            document.getElementById('search-input').value = text;
-            performSearch();
-        };
-
-        window.deleteHistory = (text, e) => {
-            e.stopPropagation();
-            let history = JSON.parse(localStorage.getItem('searchHistory') || '[]');
-            history = history.filter(item => item !== text);
-            localStorage.setItem('searchHistory', JSON.stringify(history));
-            loadSearchHistory();
-        };
-
-        // --- DOWNLOAD / SAVE VIDEO SYSTEM ---
-        window.saveVideo = async (url, id) => {
-            alert("กำลังเตรียมดาวน์โหลด...");
-            try {
-                const response = await fetch(url);
-                const blob = await response.blob();
-                const blobUrl = window.URL.createObjectURL(blob);
+                const div = document.createElement('div');
+                div.className = 'video-card';
+                // ถ้าเป็น Story ใส่กรอบสีม่วงที่รูป
+                const storyClass = data.type === 'story' ? 'story-ring' : '';
                 
-                const a = document.createElement('a');
-                a.href = blobUrl;
-                a.download = `vtok_clip_${id}.mp4`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                window.URL.revokeObjectURL(blobUrl);
-            } catch (error) {
-                alert("ไม่สามารถดาวน์โหลดได้ (CORS Policy อาจบล็อกในบาง Server)");
-                // Fallback: เปิด tab ใหม่
-                window.open(url, '_blank');
-            }
-        };
+                div.innerHTML = `
+                    <video src="${data.videoUrl}" loop playsinline onclick="this.paused?this.play():this.pause()"></video>
+                    <div class="right-actions">
+                        <div style="position:relative">
+                            <img src="${data.userPhoto}" class="avatar-feed ${storyClass}" onclick="loadProfile('${data.uid}')">
+                            ${(currentUser && currentUser.uid !== data.uid) ? '<div class="follow-plus" onclick="followUser(\''+data.uid+'\')"><i class="fas fa-plus"></i></div>' : ''}
+                        </div>
+                        <div class="action-btn"><i class="fas fa-heart" style="color:white;"></i><span>${data.likes}</span></div>
+                        <div class="action-btn"><i class="fas fa-comment-dots"></i><span>0</span></div>
+                        <div class="action-btn"><i class="fas fa-share"></i><span>Share</span></div>
+                    </div>
+                    <div class="bottom-info">
+                        <div class="username-tag" onclick="loadProfile('${data.uid}')">@${data.username}</div>
+                        <div>${data.desc} ${data.type === 'story' ? '<span style="background:#c026d3; padding:2px 5px; font-size:10px; border-radius:4px;">Story</span>' : ''}</div>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
 
-        // Start App
+        window.closeModal = (id) => {
+            document.getElementById(id).style.display = 'none';
+            document.getElementById('progress-area').style.display = 'none';
+            document.getElementById('prog-bar').style.width = '0%';
+        }
+
         loadFeed();
+        
+        // Expose functions to window
+        window.loadProfile = loadProfile; 
 
     </script>
 </body>
