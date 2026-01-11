@@ -3,266 +3,263 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>V-Tok Ultimate v2</title>
+    <title>V-Tok Final (2GB Support)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
-        /* --- CORE SYSTEM & THEME --- */
+        /* --- CORE THEME (TIKTOK STYLE) --- */
         :root {
             --bg: #121212;
             --nav-bg: #000;
             --text: #fff;
-            --accent: #25F4EE; /* สีฟ้า TikTok */
-            --accent-2: #FE2C55; /* สีแดง TikTok */
+            --accent: #25F4EE; /* Cyan */
+            --accent-2: #FE2C55; /* Red */
             --gray: #888;
-            --glass: rgba(20, 20, 20, 0.95);
+            --glass: rgba(20, 20, 20, 0.85);
         }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; user-select: none; }
         body { margin: 0; background: var(--bg); color: var(--text); font-family: 'Kanit', sans-serif; overflow: hidden; height: 100vh; display: flex; flex-direction: column; }
 
-        /* --- LAYOUT MANAGER --- */
-        .page { position: absolute; top:0; left:0; width:100%; height:100%; display: none; background: var(--bg); z-index: 10; padding-bottom: 60px; }
+        /* --- LOADING SCREEN (SKELETON) --- */
+        #splash-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999; display: flex; justify-content: center; align-items: center; transition: opacity 0.5s; }
+        .tiktok-loader { width: 50px; height: 50px; border-radius: 50%; border: 5px solid transparent; border-top-color: var(--accent); border-bottom-color: var(--accent-2); animation: spin 0.8s linear infinite; }
+        
+        /* --- PAGE MANAGER --- */
+        .page { position: absolute; top:0; left:0; width:100%; height:100%; display: none; background: var(--bg); z-index: 10; padding-bottom: 50px; }
         .page.active { display: block; z-index: 20; }
         
         /* --- FEED STYLES --- */
         #feed-container { overflow-y: scroll; scroll-snap-type: y mandatory; height: 100%; background: #000; scrollbar-width: none; }
-        .video-card { width: 100%; height: 100%; scroll-snap-align: start; position: relative; background: #000; }
-        video { width: 100%; height: 100%; object-fit: cover; }
+        .video-card { width: 100%; height: 100%; scroll-snap-align: start; position: relative; background: #000; overflow: hidden; }
+        
+        /* Optimize Video Loading */
+        video { width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 0.3s; }
+        video.ready { opacity: 1; }
 
-        /* Feed Header (Tabs) */
-        .top-tabs { position: fixed; top: 20px; width: 100%; display: flex; justify-content: center; gap: 20px; z-index: 50; text-shadow: 1px 1px 3px rgba(0,0,0,0.8); font-weight: bold; font-size: 1.1rem; }
-        .tab-item { opacity: 0.6; transition: 0.3s; cursor: pointer; }
-        .tab-item.active { opacity: 1; border-bottom: 2px solid #fff; padding-bottom: 3px; }
+        /* Feed Tabs */
+        .top-tabs { position: fixed; top: 25px; width: 100%; display: flex; justify-content: center; gap: 20px; z-index: 50; text-shadow: 1px 1px 3px rgba(0,0,0,0.8); font-weight: bold; font-size: 1.1rem; }
+        .tab-item { opacity: 0.6; transition: 0.3s; cursor: pointer; position: relative;}
+        .tab-item.active { opacity: 1; color: #fff; }
+        .tab-item.active::after { content:''; position:absolute; bottom:-5px; left:50%; transform:translateX(-50%); width: 20px; height: 2px; background: #fff; }
 
-        /* Right Actions */
-        .right-actions { position: absolute; right: 10px; bottom: 120px; display: flex; flex-direction: column; gap: 20px; align-items: center; z-index: 30; }
-        .action-btn { display: flex; flex-direction: column; align-items: center; font-size: 28px; text-shadow: 0 2px 5px rgba(0,0,0,0.5); cursor: pointer; transition: transform 0.2s; }
-        .action-btn:active { transform: scale(0.8); }
-        .action-btn span { font-size: 12px; font-weight: 600; margin-top: 3px; }
-        .liked { color: var(--accent-2); }
-        .saved { color: #ffd700; }
+        /* Actions Sidebar */
+        .right-actions { position: absolute; right: 8px; bottom: 120px; display: flex; flex-direction: column; gap: 18px; align-items: center; z-index: 30; }
+        .action-btn { display: flex; flex-direction: column; align-items: center; cursor: pointer; transition: transform 0.1s; }
+        .action-btn:active { transform: scale(0.9); }
+        .action-btn i { font-size: 28px; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.5)); margin-bottom: 3px; color: white; transition: color 0.2s;}
+        .action-btn span { font-size: 11px; font-weight: 600; text-shadow: 0 1px 2px rgba(0,0,0,0.8); }
+        .liked i { color: var(--accent-2) !important; }
+        .saved i { color: #FFD700 !important; }
 
-        /* Avatar with Animation */
-        .avatar-container { position: relative; margin-bottom: 10px; }
-        .avatar-feed { width: 48px; height: 48px; border-radius: 50%; border: 2px solid #fff; object-fit: cover; }
+        /* Avatar & Follow */
+        .avatar-container { position: relative; margin-bottom: 15px; }
+        .avatar-feed { width: 48px; height: 48px; border-radius: 50%; border: 1px solid #fff; object-fit: cover; }
         .follow-plus { position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%); width: 22px; height: 22px; background: var(--accent-2); border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 12px; color: white; }
 
-        /* Spinning Disc */
-        .disc-area { width: 45px; height: 45px; background: #222; border-radius: 50%; border: 8px solid #111; display: flex; justify-content: center; align-items: center; animation: spin 4s linear infinite; overflow: hidden; margin-top: 10px; }
+        /* Disc Animation */
+        .disc-area { width: 45px; height: 45px; background: #222; border-radius: 50%; border: 8px solid #181818; display: flex; justify-content: center; align-items: center; animation: spin 5s linear infinite; overflow: hidden; margin-top: 10px; }
         .disc-area img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
 
         /* Bottom Info */
-        .bottom-info { position: absolute; bottom: 0; left: 0; width: 100%; padding: 20px 80px 80px 15px; background: linear-gradient(transparent, rgba(0,0,0,0.8)); pointer-events: none; }
+        .bottom-info { position: absolute; bottom: 0; left: 0; width: 100%; padding: 20px 80px 75px 15px; background: linear-gradient(to top, rgba(0,0,0,0.9), transparent); pointer-events: none; }
         .info-txt { pointer-events: auto; }
-        
+        .music-ticker { font-size: 13px; display: flex; align-items: center; gap: 5px; margin-top: 5px; }
+
         /* --- PROFILE PAGE --- */
-        #profile-page { background: var(--bg); overflow-y: auto; }
-        .profile-nav { display: flex; justify-content: space-between; padding: 15px; align-items: center; position: sticky; top:0; background: var(--bg); z-index: 50;}
-        .profile-header { text-align: center; padding-top: 10px; }
-        .p-img { width: 90px; height: 90px; border-radius: 50%; object-fit: cover; border: 2px solid #333; }
-        .stats-row { display: flex; justify-content: center; gap: 30px; margin: 15px 0; }
-        .btn-row { display: flex; justify-content: center; gap: 8px; margin-bottom: 20px; }
-        .btn-edit { background: #333; color: white; border: 1px solid #444; padding: 8px 20px; border-radius: 4px; font-weight: bold; }
+        #profile-page-ui { overflow-y: auto; }
+        .profile-header { padding: 80px 20px 20px; text-align: center; }
+        .p-img { width: 96px; height: 96px; border-radius: 50%; object-fit: cover; border: 2px solid #222; }
+        .stats-row { display: flex; justify-content: center; gap: 35px; margin: 20px 0; }
+        .stat-item b { font-size: 18px; display: block; }
+        .stat-item span { font-size: 12px; color: var(--gray); }
+        .btn-row { display: flex; justify-content: center; gap: 5px; margin-bottom: 20px; }
+        .btn-edit { background: #333; color: white; border: 1px solid #444; padding: 10px 30px; border-radius: 4px; font-weight: 600; font-size: 14px; }
         
-        /* Profile Tabs */
-        .profile-tabs { display: flex; justify-content: space-around; border-top: 1px solid #333; border-bottom: 1px solid #333; background: var(--bg); position: sticky; top: 60px; z-index: 40; }
-        .p-tab { padding: 12px; color: #666; cursor: pointer; flex: 1; text-align: center; font-size: 18px; }
+        .profile-tabs { display: flex; justify-content: space-around; border-top: 1px solid #222; border-bottom: 1px solid #222; background: var(--bg); position: sticky; top: 0; z-index: 40; height: 45px; align-items: center;}
+        .p-tab { color: #666; cursor: pointer; flex: 1; text-align: center; height: 100%; display: flex; justify-content: center; align-items: center;}
         .p-tab.active { color: #fff; border-bottom: 2px solid #fff; }
         
         .grid-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; }
-        .grid-item { aspect-ratio: 3/4; background: #222; position: relative; cursor: pointer; }
-        .grid-item video { width: 100%; height: 100%; object-fit: cover; }
-        .view-overlay { position: absolute; bottom: 5px; left: 5px; font-size: 12px; display: flex; align-items: center; gap: 3px; }
+        .grid-item { aspect-ratio: 3/4; background: #1a1a1a; position: relative; cursor: pointer; }
+        .grid-item img, .grid-item video { width: 100%; height: 100%; object-fit: cover; }
 
         /* --- CHAT PAGE --- */
-        .chat-list-item { padding: 15px; display: flex; align-items: center; gap: 15px; border-bottom: 1px solid #222; cursor: pointer; }
-        .chat-room { display: flex; flex-direction: column; height: 100%; background: #000; }
-        .chat-header { padding: 15px; background: #111; border-bottom: 1px solid #333; display: flex; align-items: center; gap: 10px; }
-        .chat-box { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
-        .msg { max-width: 70%; padding: 10px 15px; border-radius: 20px; font-size: 14px; position: relative; }
-        .msg.me { align-self: flex-end; background: var(--accent); color: #000; border-bottom-right-radius: 5px; }
-        .msg.other { align-self: flex-start; background: #333; color: #fff; border-bottom-left-radius: 5px; }
-        .chat-input-area { padding: 10px; background: #111; display: flex; gap: 10px; align-items: center; }
-        .chat-input { flex: 1; background: #333; border: none; padding: 10px; border-radius: 20px; color: white; }
-
-        /* --- NOTIFICATION BANNER (Like Mobile) --- */
-        #notif-banner { 
-            position: fixed; top: -100px; left: 10px; right: 10px; 
-            background: rgba(30, 30, 30, 0.95); backdrop-filter: blur(10px);
-            border-radius: 12px; padding: 12px; display: flex; align-items: center; gap: 12px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.5); z-index: 2000; transition: top 0.4s ease; border: 1px solid #333;
-        }
-        #notif-banner img { width: 40px; height: 40px; border-radius: 50%; }
-
-        /* --- NAVBAR --- */
-        .navbar { position: fixed; bottom: 0; left: 0; width: 100%; height: 55px; background: var(--nav-bg); border-top: 1px solid #333; display: flex; justify-content: space-around; align-items: center; z-index: 100; }
-        .nav-item { font-size: 22px; color: var(--gray); cursor: pointer; display: flex; flex-direction: column; align-items: center; }
+        .chat-header { padding: 15px; border-bottom: 1px solid #333; font-weight: bold; display: flex; justify-content: space-between; align-items: center; background: var(--bg); }
+        .chat-list-item { padding: 15px; display: flex; align-items: center; gap: 15px; cursor: pointer; transition: 0.2s; }
+        .chat-list-item:active { background: #222; }
+        
+        /* Chat Room */
+        #chat-room { background: #000; z-index: 100; display: flex; flex-direction: column; }
+        .room-header { padding: 10px 15px; background: #111; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #222; }
+        .room-msgs { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 8px; }
+        .msg-bubble { max-width: 75%; padding: 8px 12px; border-radius: 18px; font-size: 14px; word-wrap: break-word; }
+        .msg-me { align-self: flex-end; background: var(--accent); color: #000; border-bottom-right-radius: 4px; }
+        .msg-you { align-self: flex-start; background: #333; color: #fff; border-bottom-left-radius: 4px; }
+        .room-input { padding: 10px; background: #111; display: flex; gap: 10px; align-items: center; }
+        
+        /* --- BOTTOM NAVBAR --- */
+        .navbar { position: fixed; bottom: 0; left: 0; width: 100%; height: 52px; background: #000; border-top: 1px solid #222; display: flex; justify-content: space-around; align-items: center; z-index: 100; }
+        .nav-item { font-size: 20px; color: #666; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 20%; height: 100%; }
         .nav-item.active { color: #fff; }
-        .nav-upload { width: 45px; height: 30px; background: linear-gradient(to right, var(--accent), var(--accent-2)); border-radius: 8px; display: flex; justify-content: center; align-items: center; position: relative; top: 2px;}
-        .nav-upload i { color: #000; background: #fff; width: 35px; height: 100%; display: flex; justify-content: center; align-items: center; border-radius: 4px; font-size: 14px; }
+        .nav-item span { font-size: 10px; margin-top: 2px; }
+        
+        .upload-btn-container { width: 45px; height: 30px; background: linear-gradient(to right, var(--accent), var(--accent-2)); border-radius: 8px; display: flex; justify-content: center; align-items: center; position: relative; }
+        .upload-btn-inner { width: 37px; height: 100%; background: #fff; border-radius: 4px; display: flex; justify-content: center; align-items: center; font-size: 14px; color: #000; }
 
         /* --- MODALS --- */
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 3000; justify-content: center; align-items: center; }
-        .modal-box { background: #1e1e1e; padding: 25px; border-radius: 15px; width: 90%; max-width: 400px; color: white; border: 1px solid #333; }
-        input, textarea { width: 100%; background: #2c2c2c; border: none; padding: 12px; color: white; border-radius: 8px; margin: 10px 0; font-family: 'Kanit'; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
+        .modal-box { background: #252525; padding: 25px; border-radius: 12px; width: 85%; max-width: 380px; text-align: center; color: white; border: 1px solid #333; position: relative; }
         
-        .progress-bar { width: 100%; height: 6px; background: #333; border-radius: 3px; overflow: hidden; margin-top: 10px; display: none; }
-        .progress-fill { height: 100%; width: 0%; background: var(--accent-2); transition: width 0.2s; }
+        input, textarea { width: 100%; background: #3a3a3a; border: none; padding: 12px; color: white; border-radius: 8px; margin: 10px 0; font-family: 'Kanit'; }
+        .btn-main { width: 100%; padding: 12px; background: var(--accent-2); border: none; color: white; font-weight: bold; border-radius: 4px; margin-top: 10px; font-size: 16px; cursor: pointer; }
+        .btn-sec { background: transparent; color: #aaa; margin-top: 10px; width: 100%; border: none; padding: 10px; cursor: pointer; }
 
-        .menu-popup { position: absolute; top: 50px; right: 15px; background: #222; border-radius: 8px; width: 150px; display: none; z-index: 60; border: 1px solid #444; }
-        .menu-item { padding: 12px; border-bottom: 1px solid #333; cursor: pointer; }
-        .menu-item:last-child { border: none; color: var(--accent-2); }
+        /* Progress Bar for 2GB Upload */
+        .progress-wrapper { width: 100%; background: #111; height: 8px; border-radius: 4px; margin: 15px 0; overflow: hidden; display: none; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-2)); width: 0%; transition: width 0.2s; }
+        .upload-status { font-size: 12px; color: var(--accent); margin-top: 5px; text-align: right; }
+
+        /* Settings Menu */
+        .settings-popup { position: absolute; top: 50px; right: 20px; background: #252525; border-radius: 8px; width: 160px; display: none; z-index: 99; border: 1px solid #444; }
+        .settings-item { padding: 12px; border-bottom: 1px solid #333; font-size: 14px; cursor: pointer; text-align: left; }
+        .settings-item:last-child { border: none; color: var(--accent-2); }
 
     </style>
 </head>
 <body>
 
-    <audio id="notif-sound" src="https://assets.mixkit.co/sfx/preview/mixkit-software-interface-start-2574.mp3"></audio>
-    <div id="notif-banner" onclick="openPage('chat-page')">
-        <img id="notif-img" src="">
-        <div style="flex:1;">
-            <div id="notif-title" style="font-weight:bold; font-size:14px;"></div>
-            <div id="notif-msg" style="font-size:12px; color:#ccc;"></div>
-        </div>
-    </div>
+    <div id="splash-screen"><div class="tiktok-loader"></div></div>
 
     <div id="feed-page" class="page active">
         <div class="top-tabs">
-            <div class="tab-item" id="tab-following" onclick="switchFeed('following')">กำลังติดตาม</div>
-            <div class="tab-item active" id="tab-foryou" onclick="switchFeed('foryou')">สำหรับคุณ</div>
+            <div class="tab-item" id="t-follow" onclick="switchFeed('follow')">กำลังติดตาม</div>
+            <div class="tab-item active" id="t-foryou" onclick="switchFeed('foryou')">สำหรับคุณ</div>
         </div>
         <div id="feed-container"></div>
     </div>
 
     <div id="search-page" class="page">
-        <div style="padding:20px;">
-            <input type="text" placeholder="ค้นหากระแส, ผู้ใช้งาน, เสียง..." style="background:#222; padding-left:40px;">
-            <i class="fas fa-search" style="position:absolute; left:35px; top:35px; color:#666;"></i>
-            <h3 style="margin-top:20px;">ค้นพบสำหรับคุณ</h3>
+        <div style="padding:15px;">
+            <div style="position:relative;">
+                <input type="text" placeholder="ค้นหากระแส..." style="background:#222; padding-left:40px;">
+                <i class="fas fa-search" style="position:absolute; left:12px; top:24px; color:#666;"></i>
+            </div>
+            <h3 style="margin-top:20px;">🔥 มาแรงในไทย</h3>
             <div style="display:flex; flex-wrap:wrap; gap:10px;">
-                <span style="background:#222; padding:5px 15px; border-radius:20px;">#ตลก</span>
-                <span style="background:#222; padding:5px 15px; border-radius:20px;">#เกม</span>
-                <span style="background:#222; padding:5px 15px; border-radius:20px;">#VTok</span>
+                <div style="background:#222; padding:8px 15px; border-radius:20px;">#สงกรานต์</div>
+                <div style="background:#222; padding:8px 15px; border-radius:20px;">#เกม</div>
+                <div style="background:#222; padding:8px 15px; border-radius:20px;">#เต้น</div>
             </div>
         </div>
     </div>
 
     <div id="chat-page" class="page">
-        <div class="profile-nav">
-            <div style="font-weight:bold; font-size:18px;">กล่องข้อความ</div>
-            <i class="fas fa-plus" onclick="alert('ค้นหาเพื่อนเพื่อเริ่มแชท')"></i>
+        <div class="chat-header">
+            <span>กล่องขาเข้า</span>
+            <i class="fas fa-plus-circle" onclick="alert('ค้นหาเพื่อน')"></i>
         </div>
-        <div id="chat-list-container"></div>
+        <div id="chat-list"></div>
     </div>
-    
-    <div id="chat-room" class="page" style="z-index: 100;">
-        <div class="chat-room">
-            <div class="chat-header">
-                <i class="fas fa-arrow-left" onclick="closeChat()"></i>
-                <img id="chat-partner-img" src="" style="width:35px; height:35px; border-radius:50%;">
-                <div id="chat-partner-name" style="font-weight:bold;">User</div>
-            </div>
-            <div id="chat-box" class="chat-box"></div>
-            <div class="chat-input-area">
-                <input type="text" id="msg-input" class="chat-input" placeholder="ส่งข้อความ...">
-                <i class="fas fa-paper-plane" style="color:var(--accent-2); font-size:20px;" onclick="sendMessage()"></i>
-            </div>
+
+    <div id="chat-room" class="page" style="top:100%; transition:top 0.3s; z-index:300;">
+        <div class="room-header">
+            <i class="fas fa-arrow-left" onclick="closeChat()"></i>
+            <img id="chat-u-img" src="" style="width:30px; height:30px; border-radius:50%;">
+            <b id="chat-u-name">User</b>
+        </div>
+        <div id="room-msgs" class="room-msgs"></div>
+        <div class="room-input">
+            <input type="text" id="msg-input" placeholder="ส่งข้อความ..." style="margin:0;">
+            <i class="fas fa-paper-plane" style="color:var(--accent-2); font-size:20px;" onclick="sendMsg()"></i>
         </div>
     </div>
 
     <div id="profile-page-ui" class="page">
-        <div class="profile-nav">
-            <i class="fas fa-user-plus"></i>
-            <div id="my-name-top" style="font-weight:bold;">Name</div>
-            <i class="fas fa-bars" onclick="toggleMenu()"></i>
-            <div id="settings-menu" class="menu-popup">
-                <div class="menu-item" onclick="alert('ตั้งค่า')">เครื่องมือผู้สร้าง</div>
-                <div class="menu-item" onclick="alert('ตั้งค่า')">การตั้งค่า</div>
-                <div class="menu-item" onclick="logout()">ออกจากระบบ</div>
-            </div>
-        </div>
-
         <div class="profile-header">
+            <div style="position:absolute; top:15px; right:15px; font-size:20px;" onclick="toggleSettings()"><i class="fas fa-bars"></i></div>
+            
+            <div id="settings-menu" class="settings-popup">
+                <div class="settings-item">เครื่องมือผู้สร้าง</div>
+                <div class="settings-item">การตั้งค่าและความเป็นส่วนตัว</div>
+                <div class="settings-item" onclick="logout()">ออกจากระบบ</div>
+            </div>
+
             <img id="my-img" src="" class="p-img">
-            <h2 id="my-name" style="margin:5px 0;">@username</h2>
+            <h2 id="my-name" style="margin:10px 0 5px;">@username</h2>
             <div class="stats-row">
-                <div style="text-align:center;"><b>0</b><div style="font-size:12px; color:#888;">กำลังติดตาม</div></div>
-                <div style="text-align:center;"><b>0</b><div style="font-size:12px; color:#888;">ผู้ติดตาม</div></div>
-                <div style="text-align:center;"><b>0</b><div style="font-size:12px; color:#888;">ถูกใจ</div></div>
+                <div class="stat-item"><b>0</b><span>กำลังติดตาม</span></div>
+                <div class="stat-item"><b>0</b><span>ผู้ติดตาม</span></div>
+                <div class="stat-item"><b>0</b><span>ถูกใจ</span></div>
             </div>
             <div class="btn-row">
                 <div class="btn-edit" onclick="openEditProfile()">แก้ไขโปรไฟล์</div>
-                <div class="btn-edit" onclick="alert('แชร์โปรไฟล์')"><i class="fas fa-share"></i></div>
+                <div class="btn-edit"><i class="fas fa-bookmark"></i></div>
             </div>
         </div>
-
-        <div class="profile-tabs">
-            <div class="p-tab active" onclick="switchProfileTab('posts')"><i class="fas fa-th"></i></div>
-            <div class="p-tab" onclick="switchProfileTab('likes')"><i class="fas fa-heart"></i></div>
-            <div class="p-tab" onclick="switchProfileTab('repost')"><i class="fas fa-retweet"></i></div>
-            <div class="p-tab" onclick="switchProfileTab('saved')"><i class="fas fa-bookmark"></i></div>
-        </div>
         
+        <div class="profile-tabs">
+            <div class="p-tab active" onclick="switchPTab('posts')"><i class="fas fa-th"></i></div>
+            <div class="p-tab" onclick="switchPTab('likes')"><i class="fas fa-heart"></i></div>
+            <div class="p-tab" onclick="switchPTab('saved')"><i class="fas fa-bookmark"></i></div>
+        </div>
         <div id="profile-grid" class="grid-container"></div>
     </div>
 
     <div class="navbar">
-        <div class="nav-item active" onclick="openPage('feed-page')"><i class="fas fa-home"></i><span style="font-size:10px">หน้าหลัก</span></div>
-        <div class="nav-item" onclick="openPage('search-page')"><i class="fas fa-compass"></i><span style="font-size:10px">ค้นพบ</span></div>
-        <div class="nav-item" onclick="openUpload()"><div class="nav-upload"><i class="fas fa-plus"></i></div></div>
-        <div class="nav-item" onclick="openPage('chat-page')"><i class="far fa-comment-dots"></i><span style="font-size:10px">กล่องขาเข้า</span></div>
-        <div class="nav-item" onclick="openMyProfile()"><i class="far fa-user"></i><span style="font-size:10px">โปรไฟล์</span></div>
-    </div>
-
-    <div id="login-modal" class="modal">
-        <div class="modal-box" style="text-align:center;">
-            <h2>เข้าสู่ระบบ V-Tok</h2>
-            <p>เพื่อเริ่มดูคลิปและสร้างสรรค์คอนเทนต์</p>
-            <button onclick="loginGoogle()" style="width:100%; padding:15px; background:white; color:black; border:none; border-radius:5px; font-weight:bold; margin-top:20px;">
-                <i class="fab fa-google"></i> ดำเนินการต่อด้วย Google
-            </button>
+        <div class="nav-item active" onclick="goPage('feed-page')"><i class="fas fa-home"></i><span>หน้าหลัก</span></div>
+        <div class="nav-item" onclick="goPage('search-page')"><i class="fas fa-compass"></i><span>ค้นพบ</span></div>
+        <div class="nav-item" onclick="checkUpload()">
+            <div class="upload-btn-container"><div class="upload-btn-inner"><i class="fas fa-plus"></i></div></div>
         </div>
+        <div class="nav-item" onclick="goPage('chat-page')"><i class="far fa-comment-dots"></i><span>กล่องขาเข้า</span></div>
+        <div class="nav-item" onclick="goMyProfile()"><i class="far fa-user"></i><span>โปรไฟล์</span></div>
     </div>
 
     <div id="upload-modal" class="modal">
         <div class="modal-box">
-            <h3>สร้างโพสต์ใหม่</h3>
-            <div style="font-size:12px; color:#aaa; margin-bottom:10px;">เลือกวิดีโอจากอุปกรณ์ของคุณ</div>
+            <h3>อัปโหลดคลิป (รองรับ 2GB)</h3>
             <input type="file" id="up-file" accept="video/*">
-            <input type="text" id="up-title" placeholder="ชื่อคลิป...">
-            <textarea id="up-desc" rows="3" placeholder="อธิบายคลิปของคุณ #hashtag..."></textarea>
+            <input type="text" id="up-cap" placeholder="แคปชั่นของคุณ #hashtag">
             
-            <div class="progress-bar" id="up-progress-bg">
-                <div class="progress-fill" id="up-progress"></div>
+            <div class="progress-wrapper" id="prog-wrap">
+                <div class="progress-fill" id="prog-bar"></div>
             </div>
-            <div id="up-status" style="font-size:12px; color:var(--accent); text-align:right; margin-bottom:10px;"></div>
+            <div id="prog-txt" class="upload-status"></div>
 
-            <button onclick="startUpload()" style="width:100%; padding:12px; background:var(--accent-2); border:none; color:white; font-weight:bold; border-radius:5px;">โพสต์</button>
-            <button onclick="closeModal('upload-modal')" style="width:100%; padding:12px; background:transparent; border:none; color:#888; margin-top:5px;">ยกเลิก</button>
+            <button class="btn-main" onclick="startUpload()">โพสต์เลย</button>
+            <button class="btn-sec" onclick="closeModal('upload-modal')">ยกเลิก</button>
+        </div>
+    </div>
+
+    <div id="login-modal" class="modal">
+        <div class="modal-box">
+            <h2>เข้าสู่ระบบ V-Tok</h2>
+            <button class="btn-main" style="background:#fff; color:#000;" onclick="loginGoogle()">
+                <i class="fab fa-google"></i> ดำเนินการต่อด้วย Google
+            </button>
         </div>
     </div>
 
     <div id="edit-modal" class="modal">
         <div class="modal-box">
             <h3>แก้ไขโปรไฟล์</h3>
-            <label>ชื่อที่แสดง</label>
-            <input type="text" id="edit-name">
-            <label>รูปโปรไฟล์ (URL)</label>
-            <input type="text" id="edit-pic">
-            <button onclick="saveProfile()" style="width:100%; padding:12px; background:var(--accent); border:none; color:black; font-weight:bold; border-radius:5px;">บันทึก</button>
-            <button onclick="closeModal('edit-modal')" style="width:100%; padding:12px; background:transparent; border:none; color:#888;">ยกเลิก</button>
+            <input type="text" id="ed-name" placeholder="ชื่อใหม่">
+            <input type="text" id="ed-pic" placeholder="URL รูปโปรไฟล์">
+            <button class="btn-main" onclick="saveProfile()">บันทึก</button>
+            <button class="btn-sec" onclick="closeModal('edit-modal')">ยกเลิก</button>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
-        import { getFirestore, collection, addDoc, getDocs, getDoc, setDoc, doc, query, orderBy, limit, where, updateDoc, increment, arrayUnion, arrayRemove, onSnapshot } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, getDocs, getDoc, setDoc, doc, query, orderBy, limit, updateDoc, arrayUnion, arrayRemove, onSnapshot } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
         import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-storage.js";
 
-        // --- SETUP: ใส่ Config ของคุณที่นี่ ---
+        // --- ใส่ CONFIG ตรงนี้ ---
         const firebaseConfig = {
   apiKey: "AIzaSyB575txzpvEoiUPGAzMWmBIJ-AumUrPZ04",
   authDomain: "mychatapp-6553a.firebaseapp.com",
@@ -274,339 +271,232 @@
   measurementId: "G-X4LL87Q0Z4"
 };
 
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const storage = getStorage(app);
+        // เริ่มต้นระบบแบบ Safe Mode (กันพัง)
+        let app, auth, db, storage;
+        try {
+            app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+            storage = getStorage(app);
+        } catch (e) {
+            console.error("Firebase Init Error:", e);
+            alert("ตั้งค่า Firebase ไม่ถูกต้อง โปรดเช็ค Console");
+        }
+
         let currentUser = null;
-        let currentFeedType = 'foryou';
-        let currentChatId = null;
+        let activeChatId = null;
 
-        // --- 1. AUTH & USER DATA ---
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                currentUser = user;
-                closeModal('login-modal');
-                // Ensure user doc exists
-                const userRef = doc(db, "users", user.uid);
-                const snap = await getDoc(userRef);
-                if (!snap.exists()) {
-                    await setDoc(userRef, {
-                        uid: user.uid,
-                        displayName: user.displayName,
-                        photoURL: user.photoURL,
-                        followers: [],
-                        following: [],
-                        email: user.email
-                    });
-                }
-                listenToMessages(); // Start Listening for Notifs
-            } else {
-                openModal('login-modal');
+        // --- แก้บัค 1: บังคับปิดหน้าโหลดภายใน 1.5 วิ ไม่ว่าจะโหลดเสร็จหรือไม่ ---
+        setTimeout(() => {
+            const splash = document.getElementById('splash-screen');
+            if(splash) {
+                splash.style.opacity = 0;
+                setTimeout(() => splash.style.display = 'none', 500);
             }
-        });
+        }, 1500); 
 
-        window.loginGoogle = async () => {
-            try { await signInWithPopup(auth, new GoogleAuthProvider()); } catch(e) { alert(e.message); }
-        };
+        // --- AUTH SYSTEM ---
+        if(auth) {
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    currentUser = user;
+                    closeModal('login-modal');
+                    // สร้างข้อมูล User เงียบๆ (ไม่รอ)
+                    const uRef = doc(db, "users", user.uid);
+                    getDoc(uRef).then(s => {
+                        if(!s.exists()) setDoc(uRef, { uid:user.uid, name:user.displayName, photo:user.photoURL, followers:[], following:[] });
+                    }).catch(e => console.log("User Init Skip"));
+                } else {
+                    // ถ้ายังไม่ Login ไม่ต้องบังคับเด้ง Modal ทันที ให้ดู Feed ก่อนได้
+                    // openModal('login-modal'); <--- ปิดบรรทัดนี้เพื่อให้เข้าหน้าเว็บได้ก่อน
+                }
+            });
+        }
+
+        window.loginGoogle = () => {
+            if(!auth) return alert("ระบบยังไม่พร้อม");
+            signInWithPopup(auth, new GoogleAuthProvider()).catch(e => alert(e.message));
+        }
         window.logout = () => signOut(auth).then(() => location.reload());
 
-        // --- 2. NAVIGATION ---
-        window.openPage = (pageId) => {
-            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-            document.getElementById(pageId).classList.add('active');
+        // --- SPEED FEED SYSTEM (แก้บัคโหลดค้าง) ---
+        const feedObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                const vid = entry.target;
+                if(entry.isIntersecting) {
+                    if(vid.dataset.src) {
+                        vid.src = vid.dataset.src;
+                        vid.load();
+                        vid.play().catch(()=>{});
+                        vid.classList.add('ready');
+                    }
+                } else {
+                    vid.pause();
+                }
+            });
+        }, { threshold: 0.6 });
+
+        async function loadFeed() {
+            const con = document.getElementById('feed-container');
             
-            // Highlight Navbar
-            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-            if(pageId === 'feed-page') document.querySelectorAll('.nav-item')[0].classList.add('active');
-            if(pageId === 'search-page') document.querySelectorAll('.nav-item')[1].classList.add('active');
-            if(pageId === 'chat-page') {
-                document.querySelectorAll('.nav-item')[3].classList.add('active');
-                loadChatList();
+            // ใส่ Skeleton (โครงเปล่า) รอไว้ก่อนเลย เพื่อให้รู้สึกว่าโหลดเสร็จแล้ว
+            if(con.innerHTML === "") {
+                con.innerHTML = `
+                    <div class="video-card" style="background:#111; display:flex; justify-content:center; align-items:center;">
+                        <div style="color:#444;">กำลังโหลดคลิป...</div>
+                    </div>
+                `;
             }
+
+            if(!db) return; // ถ้า Database พัง ให้หยุด
+
+            try {
+                // แก้บัค 2: ใช้ try-catch ดักจับ ถ้าเน็ตหลุด หรือ หา Index ไม่เจอ ให้ข้ามไปเลย
+                const q = query(collection(db, "posts"), orderBy("timestamp", "desc"), limit(5));
+                const snap = await getDocs(q);
+                
+                if(!snap.empty) {
+                    con.innerHTML = ""; // เคลียร์โครงเปล่าออก
+                    snap.forEach(doc => renderCard(doc.data(), doc.id, con));
+                } else {
+                    con.innerHTML = `<div style="text-align:center; padding-top:50%; color:#666;">ยังไม่มีคลิป<br>กด + เพื่ออัปโหลด</div>`;
+                }
+
+            } catch (e) {
+                console.error("Feed Error:", e);
+                // ถ้า Error (เช่นยังไม่สร้าง Index) ให้แสดงข้อความแทนการหมุนติ้ว
+                con.innerHTML = `<div style="text-align:center; padding-top:50%; color:#666;">โหลดไม่สำเร็จ<br>(ตรวจสอบ Firestore Index)</div>`;
+            }
+        }
+
+        function renderCard(d, id, container) {
+            const el = document.createElement('div');
+            el.className = 'video-card';
+            const liked = d.likes && d.likes.includes(currentUser?.uid);
+            
+            el.innerHTML = `
+                <video data-src="${d.videoUrl}" loop playsinline onclick="togglePlay(this)"></video>
+                <div class="right-actions">
+                    <div class="avatar-container">
+                        <img src="${d.userPhoto || 'https://via.placeholder.com/50'}" class="avatar-feed">
+                        ${(currentUser?.uid !== d.uid) ? '<div class="follow-plus"><i class="fas fa-plus"></i></div>' : ''}
+                    </div>
+                    <div class="action-btn ${liked?'liked':''}" onclick="doLike('${id}', this)">
+                        <i class="fas fa-heart"></i><span>${d.likes?.length||0}</span>
+                    </div>
+                    <div class="action-btn" onclick="alert('คอมเมนท์')"><i class="fas fa-comment-dots"></i><span>0</span></div>
+                    <div class="action-btn"><i class="fas fa-share"></i><span>แชร์</span></div>
+                    <div class="disc-area"><img src="${d.userPhoto || 'https://via.placeholder.com/50'}"></div>
+                </div>
+                <div class="bottom-info">
+                    <div class="info-txt">
+                        <h4 style="margin:0; text-shadow:1px 1px 2px black;">@${d.username}</h4>
+                        <div style="margin:6px 0; font-size:14px; text-shadow:1px 1px 2px black;">${d.desc}</div>
+                        <div class="music-ticker"><i class="fas fa-music"></i> เสียงต้นฉบับ - ${d.username}</div>
+                    </div>
+                </div>
+            `;
+            container.appendChild(el);
+            feedObserver.observe(el.querySelector('video'));
+        }
+
+        window.togglePlay = (v) => { if(v.paused) { v.muted=false; v.play(); } else v.pause(); };
+
+        window.doLike = async (pid, btn) => {
+            if(!currentUser) return openModal('login-modal');
+            const isLiked = btn.classList.contains('liked');
+            btn.classList.toggle('liked'); 
+            const span = btn.querySelector('span');
+            span.innerText = parseInt(span.innerText) + (isLiked ? -1 : 1);
+            try {
+                await updateDoc(doc(db, "posts", pid), { likes: isLiked ? arrayRemove(currentUser.uid) : arrayUnion(currentUser.uid) });
+            } catch(e) {}
         };
 
-        window.openMyProfile = () => {
-            if(!currentUser) return;
-            openPage('profile-page-ui');
-            document.querySelectorAll('.nav-item')[4].classList.add('active');
-            loadProfileUI(currentUser.uid);
-        };
+        // --- UPLOAD SYSTEM ---
+        window.checkUpload = () => currentUser ? openModal('upload-modal') : openModal('login-modal');
 
-        // --- 3. UPLOAD SYSTEM (FIXED) ---
-        window.openUpload = () => openModal('upload-modal');
-        
         window.startUpload = () => {
             const file = document.getElementById('up-file').files[0];
-            const title = document.getElementById('up-title').value;
-            const desc = document.getElementById('up-desc').value;
+            const cap = document.getElementById('up-cap').value;
+            if(!file) return alert("เลือกไฟล์ก่อน");
             
-            if(!file) return alert("กรุณาเลือกไฟล์วิดีโอ");
+            document.getElementById('prog-wrap').style.display = 'block';
             
-            document.getElementById('up-progress-bg').style.display = 'block';
-            
-            const storageRef = ref(storage, `videos/${Date.now()}_${file.name}`);
-            const uploadTask = uploadBytesResumable(storageRef, file);
+            const storageRef = ref(storage, `videos/${Date.now()}_${currentUser.uid}`);
+            const task = uploadBytesResumable(storageRef, file);
 
-            uploadTask.on('state_changed', 
-                (snapshot) => {
-                    const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                    document.getElementById('up-progress').style.width = progress + '%';
-                    document.getElementById('up-status').innerText = Math.round(progress) + '% Uploading...';
+            task.on('state_changed', 
+                (snap) => {
+                    const pct = (snap.bytesTransferred / snap.totalBytes) * 100;
+                    document.getElementById('prog-bar').style.width = pct + '%';
+                    document.getElementById('prog-txt').innerText = `${Math.floor(pct)}%`;
                 },
-                (error) => alert("Upload Failed"),
+                (err) => alert("Upload Error"),
                 async () => {
-                    const url = await getDownloadURL(uploadTask.snapshot.ref);
+                    const url = await getDownloadURL(task.snapshot.ref);
                     await addDoc(collection(db, "posts"), {
                         uid: currentUser.uid,
                         username: currentUser.displayName,
                         userPhoto: currentUser.photoURL,
                         videoUrl: url,
-                        title: title,
-                        desc: desc,
+                        desc: cap,
                         likes: [],
-                        saves: [],
-                        reposts: [],
                         timestamp: Date.now()
                     });
-                    document.getElementById('up-status').innerText = 'เสร็จสิ้น!';
-                    setTimeout(() => {
-                        closeModal('upload-modal');
-                        location.reload();
-                    }, 1000);
+                    setTimeout(() => location.reload(), 1000);
                 }
             );
         };
 
-        // --- 4. FEED SYSTEM ---
-        window.switchFeed = (type) => {
-            currentFeedType = type;
-            document.getElementById('tab-foryou').classList.toggle('active', type==='foryou');
-            document.getElementById('tab-following').classList.toggle('active', type==='following');
-            loadFeed();
-        };
-
-        async function loadFeed() {
-            const container = document.getElementById('feed-container');
-            container.innerHTML = "";
-            
-            let q = query(collection(db, "posts"), orderBy("timestamp", "desc"), limit(20));
-            // Note: "Following Feed" requires complex index, using same feed for demo but filtering logic can be added here
-            
-            const snaps = await getDocs(q);
-            snaps.forEach(doc => container.appendChild(createVideoCard(doc.data(), doc.id)));
-        }
-
-        function createVideoCard(data, id) {
-            const div = document.createElement('div');
-            div.className = 'video-card';
-            
-            // Check interactions
-            const isLiked = data.likes && data.likes.includes(currentUser?.uid);
-            const isSaved = data.saves && data.saves.includes(currentUser?.uid);
-            
-            div.innerHTML = `
-                <video src="${data.videoUrl}" loop playsinline onclick="togglePlay(this)"></video>
-                <div class="right-actions">
-                    <div class="avatar-container" onclick="openProfile('${data.uid}')">
-                        <img src="${data.userPhoto}" class="avatar-feed">
-                        ${(currentUser && currentUser.uid !== data.uid) ? '<div class="follow-plus"><i class="fas fa-plus"></i></div>' : ''}
-                    </div>
-                    <div class="action-btn ${isLiked?'liked':''}" onclick="interact('${id}','like', this)">
-                        <i class="fas fa-heart"></i><span>${data.likes?.length||0}</span>
-                    </div>
-                    <div class="action-btn" onclick="alert('Comment UI...')">
-                        <i class="fas fa-comment-dots"></i><span>0</span>
-                    </div>
-                    <div class="action-btn ${isSaved?'saved':''}" onclick="interact('${id}','save', this)">
-                        <i class="fas fa-bookmark"></i><span>${data.saves?.length||0}</span>
-                    </div>
-                    <div class="action-btn" onclick="interact('${id}','repost', this)">
-                        <i class="fas fa-retweet"></i><span>${data.reposts?.length||0}</span>
-                    </div>
-                    <div class="disc-area"><img src="${data.userPhoto}"></div>
-                </div>
-                <div class="bottom-info">
-                    <div class="info-txt">
-                        <h4 style="margin:0; font-weight:bold;">@${data.username}</h4>
-                        <div style="margin:5px 0;">${data.desc}</div>
-                        <div style="font-size:12px; display:flex; align-items:center;"><i class="fas fa-music" style="margin-right:5px;"></i> เสียงต้นฉบับ - ${data.username}</div>
-                    </div>
-                </div>
-            `;
-            return div;
-        }
-
-        window.togglePlay = (vid) => vid.paused ? vid.play() : vid.pause();
-
-        window.interact = async (pid, type, btn) => {
+        // --- PROFILE & UTILS ---
+        window.goMyProfile = async () => {
             if(!currentUser) return openModal('login-modal');
-            const ref = doc(db, "posts", pid);
-            const isLiked = btn.classList.contains('liked') || btn.classList.contains('saved');
-            
-            // Update UI immediately (Optimistic)
-            btn.classList.toggle(type === 'save' ? 'saved' : 'liked');
-            let span = btn.querySelector('span');
-            span.innerText = parseInt(span.innerText) + (isLiked ? -1 : 1);
-
-            // Update DB
-            let field = type === 'like' ? 'likes' : (type === 'save' ? 'saves' : 'reposts');
-            await updateDoc(ref, {
-                [field]: isLiked ? arrayRemove(currentUser.uid) : arrayUnion(currentUser.uid)
-            });
-        };
-
-        // --- 5. PROFILE & EDIT ---
-        window.loadProfileUI = async (uid) => {
-            const isMe = uid === currentUser.uid;
+            goPage('profile-page-ui');
             document.getElementById('my-img').src = currentUser.photoURL;
             document.getElementById('my-name').innerText = currentUser.displayName;
-            document.getElementById('edit-name').value = currentUser.displayName;
-            document.getElementById('edit-pic').value = currentUser.photoURL;
-            
-            switchProfileTab('posts');
-        };
-
-        window.switchProfileTab = async (tab) => {
-            document.querySelectorAll('.p-tab').forEach(t => t.classList.remove('active'));
-            event.currentTarget.classList.add('active');
+            document.getElementById('ed-name').value = currentUser.displayName;
+            document.getElementById('ed-pic').value = currentUser.photoURL;
             
             const grid = document.getElementById('profile-grid');
-            grid.innerHTML = "<div style='grid-column:span 3; text-align:center; padding:20px; color:#666;'>กำลังโหลด...</div>";
-            
-            let q;
-            if(tab === 'posts') q = query(collection(db, "posts"), where("uid", "==", currentUser.uid));
-            else if(tab === 'saved') q = query(collection(db, "posts"), where("saves", "array-contains", currentUser.uid));
-            else if(tab === 'likes') q = query(collection(db, "posts"), where("likes", "array-contains", currentUser.uid));
-            else return grid.innerHTML = "";
-
-            const snaps = await getDocs(q);
-            grid.innerHTML = "";
-            snaps.forEach(d => {
-                const item = document.createElement('div');
-                item.className = 'grid-item';
-                item.innerHTML = `
-                    <video src="${d.data().videoUrl}#t=0.1"></video>
-                    <div class="view-overlay"><i class="fas fa-play"></i> ${d.data().likes?.length || 0}</div>
-                `;
-                grid.appendChild(item);
-            });
+            grid.innerHTML = "Loading...";
+            try {
+                // โหลดแบบเร็ว (ดึงมาหมดก่อนค่อยกรอง)
+                const q = query(collection(db, "posts"), limit(20));
+                const snap = await getDocs(q);
+                grid.innerHTML = "";
+                snap.forEach(d => {
+                    if(d.data().uid === currentUser.uid) {
+                        grid.innerHTML += `<div class="grid-item"><video src="${d.data().videoUrl}#t=1" muted></video></div>`;
+                    }
+                });
+            } catch(e) { grid.innerHTML = "No Data"; }
         };
 
         window.saveProfile = async () => {
-            const name = document.getElementById('edit-name').value;
-            const pic = document.getElementById('edit-pic').value;
-            await updateProfile(currentUser, { displayName: name, photoURL: pic });
-            await updateDoc(doc(db, "users", currentUser.uid), { displayName: name, photoURL: pic });
+            const n = document.getElementById('ed-name').value;
+            const p = document.getElementById('ed-pic').value;
+            await updateProfile(currentUser, { displayName: n, photoURL: p });
             closeModal('edit-modal');
-            loadProfileUI(currentUser.uid);
+            goMyProfile();
         };
 
-        window.toggleMenu = () => {
-            const m = document.getElementById('settings-menu');
-            m.style.display = m.style.display === 'block' ? 'none' : 'block';
+        window.goPage = (p) => {
+            document.querySelectorAll('.page').forEach(e=>e.classList.remove('active'));
+            document.getElementById(p).classList.add('active');
+            document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('active'));
+            if(p.includes('feed')) document.querySelectorAll('.nav-item')[0].classList.add('active');
+            if(p.includes('profile')) document.querySelectorAll('.nav-item')[4].classList.add('active');
         };
 
-        // --- 6. CHAT SYSTEM (REALTIME) ---
-        async function loadChatList() {
-            const container = document.getElementById('chat-list-container');
-            container.innerHTML = "Loading...";
-            
-            // For Demo: Fetch all users except me (Real app should use 'friends')
-            const q = query(collection(db, "users"), limit(10));
-            const snaps = await getDocs(q);
-            container.innerHTML = "";
-            
-            snaps.forEach(docSnap => {
-                const u = docSnap.data();
-                if(u.uid === currentUser.uid) return;
-                
-                const div = document.createElement('div');
-                div.className = 'chat-list-item';
-                div.innerHTML = `
-                    <img src="${u.photoURL}" style="width:50px; height:50px; border-radius:50%;">
-                    <div>
-                        <div style="font-weight:bold;">${u.displayName}</div>
-                        <div style="font-size:12px; color:#888;">แตะเพื่อส่งข้อความ</div>
-                    </div>
-                `;
-                div.onclick = () => openChatRoom(u);
-                container.appendChild(div);
-            });
-        }
-
-        window.openChatRoom = (partner) => {
-            document.getElementById('chat-room').style.display = 'block';
-            document.getElementById('chat-partner-name').innerText = partner.displayName;
-            document.getElementById('chat-partner-img').src = partner.photoURL;
-            
-            // Create Chat ID: sort UIDs to make it unique per pair
-            const chatID = [currentUser.uid, partner.uid].sort().join("_");
-            currentChatId = chatID;
-            
-            const chatBox = document.getElementById('chat-box');
-            chatBox.innerHTML = "";
-
-            // Listen to messages
-            const q = query(collection(db, "chats", chatID, "messages"), orderBy("timestamp", "asc"));
-            onSnapshot(q, (snapshot) => {
-                chatBox.innerHTML = "";
-                snapshot.forEach(doc => {
-                    const m = doc.data();
-                    const div = document.createElement('div');
-                    div.className = `msg ${m.senderId === currentUser.uid ? 'me' : 'other'}`;
-                    div.innerText = m.text;
-                    chatBox.appendChild(div);
-                });
-                chatBox.scrollTop = chatBox.scrollHeight;
-            });
-        };
-
-        window.sendMessage = async () => {
-            const txt = document.getElementById('msg-input').value;
-            if(!txt || !currentChatId) return;
-            
-            await addDoc(collection(db, "chats", currentChatId, "messages"), {
-                text: txt,
-                senderId: currentUser.uid,
-                timestamp: Date.now()
-            });
-            document.getElementById('msg-input').value = "";
-        };
-
-        window.closeChat = () => {
-            document.getElementById('chat-room').style.display = 'none';
-            currentChatId = null;
-        };
-
-        // --- 7. NOTIFICATION LISTENER ---
-        function listenToMessages() {
-            // Listen to ALL messages where I am the receiver (Mockup Logic for demo)
-            // In real app: Listen to 'notifications' collection
-            const q = query(collection(db, "chats")); // Listening global chats for demo is unsafe, usually use specific user path
-            // For this single-file demo without Cloud Functions, we simulate notification
-            // by listening to changes in the chat list.
-        }
-        
-        // Simulating Notification when receiving msg (UI Only for Demo)
-        // Note: Real push requires Service Worker + Backend
-        window.showNotification = (name, img, msg) => {
-            const banner = document.getElementById('notif-banner');
-            document.getElementById('notif-title').innerText = name;
-            document.getElementById('notif-msg').innerText = msg;
-            document.getElementById('notif-img').src = img;
-            document.getElementById('notif-sound').play();
-            
-            banner.style.top = "10px";
-            setTimeout(() => banner.style.top = "-100px", 3000);
-        };
-
-        // --- UTILS ---
         window.openModal = (id) => document.getElementById(id).style.display = 'flex';
         window.closeModal = (id) => document.getElementById(id).style.display = 'none';
         window.openEditProfile = () => openModal('edit-modal');
-        
-        loadFeed(); // Start
+        window.toggleSettings = () => { const m=document.getElementById('settings-menu'); m.style.display=m.style.display==='block'?'none':'block'; };
+
+        // เริ่มโหลดเลย ไม่ต้องรอ Auth เสร็จ
+        loadFeed();
+
     </script>
 </body>
 </html>
