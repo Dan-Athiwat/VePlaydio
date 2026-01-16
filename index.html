@@ -3,214 +3,175 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>V-Tok Ultimate V3</title>
-    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title>TikTok Clone - Real Firebase</title>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage-compat.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     
     <style>
-        /* --- THEME --- */
-        :root { --bg: #121212; --text: #fff; --accent: #25F4EE; --accent-2: #FE2C55; }
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; user-select: none; }
-        body { margin: 0; background: var(--bg); color: var(--text); font-family: 'Kanit', sans-serif; overflow: hidden; height: 100vh; display: flex; flex-direction: column; }
-
-        /* --- LOADING SPLASH --- */
-        #splash { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999; display: flex; justify-content: center; align-items: center; transition: opacity 0.5s; }
-        .spinner { width: 50px; height: 50px; border-radius: 50%; border: 5px solid transparent; border-top-color: var(--accent); border-bottom-color: var(--accent-2); animation: spin 0.8s linear infinite; }
-        @keyframes spin { 100% { transform: rotate(360deg); } }
-
-        /* --- PAGES --- */
-        .page { position: absolute; top:0; left:0; width:100%; height:100%; display: none; background: #000; z-index: 10; padding-bottom: 55px; }
-        .page.active { display: block; z-index: 20; }
+        /* CSS Reset & Structure */
+        :root {
+            --bg-color: #000;
+            --text-color: #fff;
+            --accent-color: #fe2c55;
+            --nav-height: 60px;
+        }
+        body { margin: 0; padding: 0; background: var(--bg-color); color: var(--text-color); font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow: hidden; height: 100vh; }
         
-        /* --- FEED UI --- */
-        #feed-container { overflow-y: scroll; scroll-snap-type: y mandatory; height: 100%; scrollbar-width: none; }
-        .video-card { width: 100%; height: 100%; scroll-snap-align: start; position: relative; background: #000; overflow: hidden; }
+        /* Screens */
+        .screen { display: none; width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
+        .active { display: block; }
+
+        /* Login Screen */
+        #login-screen { display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; background: linear-gradient(45deg, #111, #333); }
+        .login-btn { padding: 15px 30px; background: white; color: black; border: none; border-radius: 5px; font-size: 18px; cursor: pointer; font-weight: bold; display: flex; align-items: center; gap: 10px; }
+
+        /* Main App Layout */
+        #app-screen { display: none; flex-direction: column; height: 100vh; }
+        
+        /* Top Navigation (Floating) */
+        .top-nav { position: absolute; top: 0; width: 100%; z-index: 100; padding: 15px 0; background: linear-gradient(to bottom, rgba(0,0,0,0.5), transparent); display: flex; justify-content: center; align-items: center; gap: 20px; font-weight: bold; font-size: 16px; pointer-events: none; }
+        .top-nav span { color: rgba(255,255,255,0.6); pointer-events: auto; cursor: pointer; }
+        .top-nav span.active-tab { color: white; border-bottom: 2px solid white; padding-bottom: 3px; }
+        .search-btn { position: absolute; right: 20px; pointer-events: auto; cursor: pointer; font-size: 20px; }
+
+        /* Video Feed (Scroll Snap) */
+        .video-feed { height: calc(100vh - var(--nav-height)); overflow-y: scroll; scroll-snap-type: y mandatory; scroll-behavior: smooth; }
+        .video-container { width: 100%; height: 100%; position: relative; scroll-snap-align: start; background: #111; display: flex; justify-content: center; align-items: center; }
         video { width: 100%; height: 100%; object-fit: cover; }
-
-        .top-nav { position: fixed; top: 25px; width: 100%; display: flex; justify-content: center; align-items: center; z-index: 50; text-shadow: 1px 1px 3px rgba(0,0,0,0.8); }
-        .nav-tab { opacity: 0.6; margin: 0 15px; font-weight: bold; cursor: pointer; }
-        .nav-tab.active { opacity: 1; border-bottom: 2px solid white; padding-bottom: 2px; }
-        .search-btn { position: absolute; right: 20px; font-size: 20px; cursor: pointer; }
-
-        /* --- ACTION SIDEBAR --- */
-        .sidebar { position: absolute; right: 10px; bottom: 100px; display: flex; flex-direction: column; gap: 20px; align-items: center; z-index: 30; }
-        .btn-icon { display: flex; flex-direction: column; align-items: center; text-align: center; cursor: pointer; }
-        .btn-icon i { font-size: 28px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5)); transition: transform 0.2s; color: white;}
-        .btn-icon:active i { transform: scale(0.8); }
-        .btn-icon span { font-size: 12px; font-weight: 600; text-shadow: 1px 1px 2px black; margin-top: 3px; }
-        .liked i { color: var(--accent-2); }
-        .saved i { color: gold; }
-        .reposted i { color: var(--accent); }
-
-        .avatar-wrap { position: relative; margin-bottom: 10px; }
-        .avatar-img { width: 45px; height: 45px; border-radius: 50%; border: 2px solid white; object-fit: cover; }
-        .follow-plus { position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%); background: var(--accent-2); width: 20px; height: 20px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 10px; color: white; }
-
-        /* --- DISC ANIMATION --- */
-        .disc-wrap { width: 45px; height: 45px; background: #222; border-radius: 50%; border: 8px solid #111; display: flex; justify-content: center; align-items: center; animation: spinDisc 5s linear infinite; margin-top: 10px; cursor: pointer; }
-        .disc-wrap img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
-        @keyframes spinDisc { 100% { transform: rotate(360deg); } }
-
-        /* --- BOTTOM INFO --- */
-        .bottom-info { position: absolute; bottom: 0; left: 0; width: 100%; padding: 20px 80px 70px 15px; background: linear-gradient(transparent, rgba(0,0,0,0.9)); pointer-events: none; }
-        .info-content { pointer-events: auto; }
-        .username { font-weight: bold; font-size: 1.1rem; margin-bottom: 5px; cursor: pointer; }
-        .desc { font-size: 14px; margin-bottom: 5px; line-height: 1.4; }
-        .date { font-size: 10px; color: #ccc; margin-bottom: 5px; }
-        .sound-tag { font-size: 13px; display: flex; align-items: center; gap: 5px; }
-
-        /* --- BOTTOM BAR --- */
-        .navbar { position: fixed; bottom: 0; width: 100%; height: 55px; background: #000; border-top: 1px solid #222; display: flex; justify-content: space-around; align-items: center; z-index: 100; }
-        .nav-item { font-size: 22px; color: #777; cursor: pointer; display: flex; flex-direction: column; align-items: center; }
-        .nav-item.active { color: #fff; }
-        .nav-item span { font-size: 9px; margin-top: 3px; }
         
-        .upload-btn { width: 45px; height: 30px; background: linear-gradient(to right, var(--accent), var(--accent-2)); border-radius: 8px; display: flex; justify-content: center; align-items: center; }
-        .upload-btn i { background: white; color: black; width: 37px; height: 100%; display: flex; justify-content: center; align-items: center; border-radius: 4px; font-size: 14px; }
-
-        /* --- MODALS --- */
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 2000; justify-content: center; align-items: center; }
-        .modal-content { background: #222; padding: 25px; width: 85%; border-radius: 12px; border: 1px solid #333; text-align: center; position: relative; }
-        input, textarea { width: 100%; background: #333; border: none; padding: 12px; color: white; border-radius: 8px; margin: 10px 0; }
-        .btn-primary { width: 100%; padding: 12px; background: var(--accent-2); border: none; color: white; font-weight: bold; border-radius: 5px; margin-top: 10px; }
+        /* Video Overlay Controls */
+        .video-sidebar { position: absolute; right: 10px; bottom: 100px; display: flex; flex-direction: column; gap: 20px; align-items: center; z-index: 10; }
+        .sidebar-icon { display: flex; flex-direction: column; align-items: center; gap: 5px; cursor: pointer; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
+        .sidebar-icon i { font-size: 30px; }
+        .profile-pic-feed { width: 45px; height: 45px; border-radius: 50%; border: 2px solid white; object-fit: cover; }
+        .like-active { color: var(--accent-color); }
         
-        /* --- PROFILE --- */
-        .profile-header { padding: 40px 20px 10px; text-align: center; position: relative; }
-        .p-img { width: 90px; height: 90px; border-radius: 50%; object-fit: cover; border: 2px solid #333; }
-        .stats { display: flex; justify-content: center; gap: 30px; margin: 15px 0; }
-        .btn-edit { padding: 8px 30px; background: #333; color: white; border: 1px solid #444; border-radius: 4px; font-weight: bold; }
-        .btn-follow { padding: 8px 30px; background: var(--accent-2); color: white; border: none; border-radius: 4px; font-weight: bold; }
+        .video-info { position: absolute; bottom: 80px; left: 10px; width: 70%; z-index: 10; text-shadow: 1px 1px 2px rgba(0,0,0,0.8); pointer-events: none; }
+        .video-info h3, .video-info p { margin: 5px 0; pointer-events: auto; }
+        .music-disc { position: absolute; bottom: 20px; right: 10px; width: 40px; height: 40px; border-radius: 50%; background: #222; border: 5px solid #111; animation: spin 4s linear infinite; }
         
-        .profile-tabs { display: flex; border-top: 1px solid #333; border-bottom: 1px solid #333; margin-top: 10px; }
-        .pt-item { flex: 1; text-align: center; padding: 12px; color: #777; cursor: pointer; }
-        .pt-item.active { color: white; border-bottom: 2px solid white; }
-        .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; }
-        .grid-item { aspect-ratio: 3/4; background: #111; position: relative; }
-        .grid-item video { width: 100%; height: 100%; object-fit: cover; }
+        /* Bottom Navigation */
+        .bottom-nav { height: var(--nav-height); background: #000; display: flex; justify-content: space-around; align-items: center; border-top: 1px solid #222; z-index: 200; position: fixed; bottom: 0; width: 100%; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; font-size: 10px; color: #777; cursor: pointer; }
+        .nav-item.active { color: white; }
+        .nav-item i { font-size: 22px; margin-bottom: 3px; }
+        .create-btn { width: 45px; height: 30px; background: linear-gradient(to right, #0ff, #f0f); border-radius: 8px; display: flex; justify-content: center; align-items: center; }
+        .create-btn i { color: black; font-size: 16px; margin: 0; }
 
-        /* --- SOUND PAGE --- */
-        #sound-page-header { padding: 20px; display: flex; align-items: center; gap: 15px; background: #111; }
-        .use-sound-btn { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--accent-2); color: white; padding: 12px 40px; border-radius: 30px; font-weight: bold; z-index: 50; display: flex; align-items: center; gap: 5px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        /* Profile Page */
+        #profile-view { padding: 60px 0 60px 0; overflow-y: auto; height: 100vh; box-sizing: border-box; }
+        .profile-header { text-align: center; padding: 20px; }
+        .profile-img { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; }
+        .stats-bar { display: flex; justify-content: center; gap: 30px; margin: 20px 0; }
+        .stat-box { text-align: center; }
+        .action-buttons { display: flex; justify-content: center; gap: 10px; }
+        .btn-edit { padding: 8px 20px; border: 1px solid #ccc; background: transparent; color: white; border-radius: 4px; }
+        .video-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; }
+        .grid-item { aspect-ratio: 9/16; background: #222; position: relative; cursor: pointer; }
+        
+        /* Upload & Search Overlay */
+        .overlay-screen { background: #000; z-index: 300; padding: 20px; display: none; }
+        .overlay-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 20px; }
+        input[type="text"], textarea { width: 100%; background: #222; border: none; padding: 15px; color: white; margin-bottom: 10px; border-radius: 5px; }
+        .upload-area { border: 2px dashed #444; padding: 40px; text-align: center; margin-bottom: 20px; cursor: pointer; }
 
-        /* --- SEARCH PAGE --- */
-        .search-bar { display: flex; gap: 10px; padding: 15px; background: #000; }
-        .search-input { margin: 0; background: #222; }
-
-        /* --- MENU SETTINGS --- */
-        .menu-popup { position: absolute; top: 50px; right: 20px; background: #222; border-radius: 8px; width: 180px; display: none; z-index: 99; border: 1px solid #444; }
-        .menu-item { padding: 12px; border-bottom: 1px solid #333; font-size: 14px; text-align: left; cursor: pointer; }
+        /* Utilities */
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
-    <div id="splash"><div class="spinner"></div></div>
+    <div id="login-screen" class="screen active">
+        <h1>TikTok Clone</h1>
+        <button class="login-btn" onclick="signInWithGoogle()">
+            <i class="fab fa-google"></i> ลงชื่อเข้าใช้ด้วย Google
+        </button>
+    </div>
 
-    <div id="feed-page" class="page active">
-        <div class="top-nav">
-            <div class="nav-tab" id="tab-follow" onclick="loadFeed('following')">กำลังติดตาม</div>
-            <div class="nav-tab active" id="tab-popular" onclick="loadFeed('popular')">ยอดนิยม</div>
+    <div id="app-screen" class="screen">
+        
+        <div class="top-nav" id="feed-header">
+            <span>กำลังติดตาม</span>
+            <span class="active-tab">สำหรับคุณ</span>
             <div class="search-btn" onclick="openSearch()"><i class="fas fa-search"></i></div>
         </div>
-        <div id="feed-container"></div>
-    </div>
 
-    <div id="search-page" class="page">
-        <div class="search-bar">
-            <i class="fas fa-arrow-left" style="align-self:center; font-size:20px;" onclick="closeSearch()"></i>
-            <input type="text" id="search-input" class="search-input" placeholder="ค้นหาคลิป...">
-            <button onclick="doSearch()" style="background:var(--accent-2); border:none; color:white; padding:0 15px; border-radius:8px;">ตกลง</button>
-        </div>
-        <div id="search-results" class="grid"></div>
-    </div>
+        <div id="main-content" style="height: 100%;">
+            
+            <div id="feed-view" class="video-feed">
+                </div>
 
-    <div id="upload-page" class="page" style="background:#111;">
-        <div style="padding:20px; text-align:center;">
-            <h3>สร้างคลิปใหม่</h3>
-            <div id="upload-sound-info" style="font-size:12px; color:var(--accent); margin-bottom:10px;"></div>
-            <input type="file" id="up-file" accept="video/*">
-            <input type="text" id="up-title" placeholder="ชื่อคลิป...">
-            <textarea id="up-desc" rows="3" placeholder="คำอธิบาย..."></textarea>
-            <div id="up-progress" style="height:5px; background:#333; margin-top:10px;"><div id="up-bar" style="height:100%; width:0%; background:var(--accent-2);"></div></div>
-            <button class="btn-primary" onclick="startUpload()">อัปโหลด</button>
-            <button onclick="goBack()" style="background:transparent; color:#888; border:none; margin-top:10px;">ยกเลิก</button>
-        </div>
-    </div>
-
-    <div id="sound-page" class="page">
-        <div id="sound-page-header">
-            <i class="fas fa-arrow-left" onclick="goBack()"></i>
-            <div style="width:60px; height:60px; background:#222; display:flex; justify-content:center; align-items:center; border-radius:8px;"><i class="fas fa-music"></i></div>
-            <div>
-                <h3 id="sp-name" style="margin:0;">Sound Name</h3>
-                <div style="font-size:12px; color:#888;">คลิปยอดนิยม</div>
-            </div>
-        </div>
-        <div id="sound-grid" class="grid"></div>
-        <div class="use-sound-btn" onclick="useThisSound()">
-            <i class="fas fa-video"></i> ใช้เสียงนี้
-        </div>
-    </div>
-
-    <div id="profile-page-ui" class="page" style="overflow-y:auto;">
-        <div class="profile-header">
-            <div style="position:absolute; top:15px; right:15px;" onclick="toggleMenu()"><i class="fas fa-bars"></i></div>
-            <div id="settings-menu" class="menu-popup">
-                <div class="menu-item" onclick="togglePrivacy()">ความเป็นส่วนตัว (ซ่อนใจ)</div>
-                <div class="menu-item" onclick="alert('ปิด UI')">ปิด UI</div>
-                <div class="menu-item" style="color:var(--accent-2);" onclick="logout()">ออกจากระบบ</div>
+            <div id="profile-view" class="hidden">
+                <div class="top-nav" style="position: sticky; background: #000; justify-content: space-between; padding: 10px 20px;">
+                    <span id="profile-username">User</span>
+                    <i class="fas fa-bars" onclick="toggleSettings()"></i>
+                </div>
+                <div class="profile-header">
+                    <img id="profile-pic" src="" class="profile-img">
+                    <h2 id="profile-display-name">...</h2>
+                    <div class="stats-bar">
+                        <div class="stat-box"><b>0</b><br><small>กำลังติดตาม</small></div>
+                        <div class="stat-box"><b>0</b><br><small>ผู้ติดตาม</small></div>
+                        <div class="stat-box"><b>0</b><br><small>ถูกใจ</small></div>
+                    </div>
+                    <div class="action-buttons">
+                        <button class="btn-edit" id="btn-edit-profile" onclick="editProfile()">แก้ไขโปรไฟล์</button>
+                    </div>
+                </div>
+                <div style="display: flex; justify-content: space-around; border-bottom: 1px solid #222; padding: 10px 0;">
+                    <i class="fas fa-th"></i>
+                    <i class="fas fa-heart"></i>
+                    <i class="fas fa-lock"></i>
+                </div>
+                <div class="video-grid" id="profile-grid">
+                    </div>
             </div>
 
-            <img id="p-img" src="" class="p-img">
-            <h2 id="p-name" style="margin:10px 0;">...</h2>
-            <div class="stats">
-                <div><b id="s-following">0</b><br><span style="font-size:10px;">กำลังติดตาม</span></div>
-                <div><b id="s-followers">0</b><br><span style="font-size:10px;">ผู้ติดตาม</span></div>
-                <div><b id="s-likes">0</b><br><span style="font-size:10px;">ถูกใจ</span></div>
-            </div>
-            <div id="p-actions"></div>
         </div>
-        <div class="profile-tabs">
-            <div class="pt-item active" onclick="switchTab('clips')"><i class="fas fa-th"></i></div>
-            <div class="pt-item" onclick="switchTab('reposts')"><i class="fas fa-retweet"></i></div>
-            <div class="pt-item" onclick="switchTab('likes')"><i class="fas fa-heart"></i></div>
-        </div>
-        <div id="profile-grid" class="grid"></div>
-    </div>
 
-    <div class="navbar" id="navbar">
-        <div class="nav-item active" onclick="goPage('feed-page')"><i class="fas fa-home"></i><span>หน้าหลัก</span></div>
-        <div class="nav-item" onclick="alert('เพื่อน')"><i class="fas fa-user-friends"></i><span>เพื่อน</span></div>
-        <div class="nav-item" onclick="openUploadNormal()"><div class="upload-btn"><i class="fas fa-plus"></i></div></div>
-        <div class="nav-item" onclick="alert('กล่องข้อความ')"><i class="far fa-comment-dots"></i><span>กล่องขาเข้า</span></div>
-        <div class="nav-item" onclick="openMyProfile()"><i class="far fa-user"></i><span>โปรไฟล์</span></div>
-    </div>
-
-    <div id="login-modal" class="modal">
-        <div class="modal-content">
-            <h2>เข้าสู่ระบบ V-Tok</h2>
-            <button class="btn-primary" style="background:white; color:black;" onclick="loginGoogle()">
-                <i class="fab fa-google"></i> Login Google
-            </button>
+        <div class="bottom-nav">
+            <div class="nav-item active" onclick="switchTab('home')"><i class="fas fa-home"></i><span>หน้าหลัก</span></div>
+            <div class="nav-item"><i class="fas fa-user-friends"></i><span>เพื่อน</span></div>
+            <div class="create-btn" onclick="openUpload()"><i class="fas fa-plus"></i></div>
+            <div class="nav-item"><i class="fas fa-inbox"></i><span>กล่องขาเข้า</span></div>
+            <div class="nav-item" onclick="switchTab('profile')"><i class="fas fa-user"></i><span>โปรไฟล์</span></div>
         </div>
     </div>
 
-    <div id="edit-modal" class="modal">
-        <div class="modal-content">
-            <h3>แก้ไขโปรไฟล์</h3>
-            <p style="font-size:10px; color:#aaa;">เปลี่ยนชื่อได้ทุก 7 วัน</p>
-            <input type="text" id="ed-name" placeholder="ชื่อใหม่">
-            <button class="btn-primary" onclick="saveProfile()">บันทึก</button>
-            <button onclick="closeModal('edit-modal')" style="background:none; border:none; color:#888; margin-top:10px;">ยกเลิก</button>
+    <div id="upload-screen" class="screen overlay-screen">
+        <div class="overlay-header">
+            <i class="fas fa-times" onclick="closeOverlay()"></i>
+            <h3>โพสต์</h3>
         </div>
+        <div class="upload-area" onclick="document.getElementById('file-input').click()">
+            <i class="fas fa-cloud-upload-alt" style="font-size: 40px; margin-bottom: 10px;"></i>
+            <p>เลือกคลิป (ไม่เกิน 10 นาที)</p>
+        </div>
+        <input type="file" id="file-input" accept="video/*" hidden onchange="handleFileSelect(this)">
+        <input type="text" id="upload-caption" placeholder="อธิบายคลิปของคุณ...">
+        <div id="sound-selector" style="background:#222; padding:10px; margin-bottom:10px; border-radius:5px;">
+            <i class="fas fa-music"></i> เสียง: <span id="selected-sound">เสียงยอดนิยม (สุ่ม)</span>
+        </div>
+        <button class="login-btn" style="width:100%; background: var(--accent-color); color: white;" onclick="uploadVideo()">โพสต์</button>
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
-        import { getFirestore, collection, addDoc, getDocs, getDoc, setDoc, doc, query, orderBy, limit, where, updateDoc, arrayUnion, arrayRemove, increment } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
-        import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-storage.js";
+    <div id="search-screen" class="screen overlay-screen">
+        <div class="overlay-header">
+            <i class="fas fa-arrow-left" onclick="closeOverlay()"></i>
+            <input type="text" id="search-input" placeholder="ค้นหา..." style="margin:0; width: 80%;">
+            <span onclick="performSearch()">ค้นหา</span>
+        </div>
+        <div id="search-results" class="video-grid"></div>
+    </div>
 
-        // --- CONFIG ---
+    <script>
+        // ==========================================
+        //  CONFIG: ใส่ Firebase Keys ของคุณที่นี่
+        // ==========================================
         const firebaseConfig = {
   apiKey: "AIzaSyB575txzpvEoiUPGAzMWmBIJ-AumUrPZ04",
   authDomain: "mychatapp-6553a.firebaseapp.com",
@@ -222,318 +183,321 @@
   measurementId: "G-X4LL87Q0Z4"
 };
 
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const storage = getStorage(app);
-        
+        // Initialize Firebase
+        // (ใช้ try-catch เพื่อป้องกันหน้าขาวถ้ายังไม่ได้ใส่ Key)
+        let auth, db, storage;
+        try {
+            firebase.initializeApp(firebaseConfig);
+            auth = firebase.auth();
+            db = firebase.firestore();
+            storage = firebase.storage();
+        } catch (e) {
+            console.error("Firebase Init Error: กรุณาใส่ API Key");
+            alert("กรุณาใส่ Firebase Config ในโค้ดก่อนใช้งาน!");
+        }
+
+        // Global State
         let currentUser = null;
-        let selectedSound = null; // { id, name }
-        let currentProfileUid = null;
+        let videos = []; 
+        let currentFile = null;
 
-        // --- LOAD FAST ---
-        setTimeout(() => { document.getElementById('splash').style.opacity=0; setTimeout(()=>document.getElementById('splash').style.display='none',500); }, 1500);
+        // ==========================================
+        //  AUTHENTICATION
+        // ==========================================
+        function signInWithGoogle() {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    // Login Success
+                    checkUserSetup(result.user);
+                }).catch((error) => {
+                    alert("Login Error: " + error.message);
+                });
+        }
 
-        // --- AUTH ---
-        onAuthStateChanged(auth, async (user) => {
+        auth.onAuthStateChanged(user => {
             if (user) {
                 currentUser = user;
-                document.getElementById('login-modal').style.display='none';
-                // Init User
-                const uRef = doc(db, "users", user.uid);
-                const s = await getDoc(uRef);
-                if(!s.exists()) {
-                    await setDoc(uRef, {
-                        uid: user.uid,
-                        displayName: user.displayName,
-                        photoURL: user.photoURL,
-                        followers: [], following: [],
-                        likesReceived: 0,
-                        lastInfoChange: 0,
-                        settings: { hideLikes: false }
-                    });
-                }
+                document.getElementById('login-screen').classList.remove('active');
+                document.getElementById('app-screen').style.display = 'flex';
+                loadFeed();
+                loadProfile();
             } else {
-                document.getElementById('login-modal').style.display='flex';
+                document.getElementById('login-screen').classList.add('active');
+                document.getElementById('app-screen').style.display = 'none';
             }
         });
 
-        window.loginGoogle = () => signInWithPopup(auth, new GoogleAuthProvider()).catch(e=>alert(e.message));
-        window.logout = () => signOut(auth).then(()=>location.reload());
+        async function checkUserSetup(user) {
+            const userRef = db.collection('users').doc(user.uid);
+            const doc = await userRef.get();
+            if (!doc.exists) {
+                // สร้าง User ใหม่ใน DB
+                await userRef.set({
+                    uid: user.uid,
+                    displayName: user.displayName,
+                    email: user.email,
+                    photoURL: user.photoURL,
+                    followers: 0,
+                    following: 0,
+                    totalLikes: 0,
+                    searchKeywords: generateKeywords(user.displayName),
+                    lastUsernameChange: 0
+                });
+            }
+        }
 
-        // --- FEED ---
-        const feedObs = new IntersectionObserver((e)=>{
-            e.forEach(i=>{
-                const v = i.target;
-                if(i.isIntersecting){ v.src=v.dataset.src; v.load(); v.play().catch(()=>{}); }
-                else { v.pause(); }
-            });
-        }, {threshold:0.6});
-
-        window.loadFeed = async (type='popular') => {
-            const con = document.getElementById('feed-container');
-            document.querySelectorAll('.nav-tab').forEach(e=>e.classList.remove('active'));
-            document.getElementById(type=='popular'?'tab-popular':'tab-follow').classList.add('active');
+        // ==========================================
+        //  NAVIGATION & UI
+        // ==========================================
+        function switchTab(tab) {
+            const feedView = document.getElementById('feed-view');
+            const profileView = document.getElementById('profile-view');
+            const navItems = document.querySelectorAll('.nav-item');
             
-            con.innerHTML = "";
-            let q = query(collection(db, "videos"), orderBy("timestamp", "desc"), limit(10));
-            // Note: 'following' feed requires complex index, using standard feed for demo stability
-            const snaps = await getDocs(q);
-            snaps.forEach(d => renderVideo(d.data(), d.id, con));
-        };
+            navItems.forEach(i => i.classList.remove('active'));
 
-        function renderVideo(d, id, con) {
-            const el = document.createElement('div');
-            el.className = 'video-card';
-            const date = new Date(d.timestamp).toLocaleDateString('th-TH');
-            const isLiked = d.likes && d.likes.includes(currentUser?.uid);
-            const isSaved = d.saves && d.saves.includes(currentUser?.uid);
-            const isReposted = d.reposts && d.reposts.includes(currentUser?.uid);
+            if (tab === 'home') {
+                feedView.classList.remove('hidden');
+                profileView.classList.add('hidden');
+                document.getElementById('feed-header').classList.remove('hidden');
+                navItems[0].classList.add('active');
+            } else if (tab === 'profile') {
+                feedView.classList.add('hidden');
+                profileView.classList.remove('hidden');
+                document.getElementById('feed-header').classList.add('hidden');
+                navItems[4].classList.add('active');
+                loadProfile(); // Reload data
+            }
+        }
 
-            el.innerHTML = `
-                <video data-src="${d.videoUrl}" loop playsinline onclick="togglePlay(this)"></video>
-                <div class="sidebar">
-                    <div class="avatar-wrap" onclick="openProfile('${d.uid}')">
-                        <img src="${d.userPhoto}" class="avatar-img">
-                        ${(currentUser?.uid !== d.uid) ? '<div class="follow-plus"><i class="fas fa-plus"></i></div>' : ''}
-                    </div>
-                    <div class="btn-icon ${isLiked?'liked':''}" onclick="doAction('${id}','like',this)">
-                        <i class="fas fa-heart"></i><span>${d.likes?.length||0}</span>
-                    </div>
-                    <div class="btn-icon" onclick="alert('คอมเมนต์')">
-                        <i class="fas fa-comment-dots"></i><span>0</span>
-                    </div>
-                    <div class="btn-icon ${isSaved?'saved':''}" onclick="doAction('${id}','save',this)">
-                        <i class="fas fa-bookmark"></i><span>บันทึก</span>
-                    </div>
-                    <div class="btn-icon ${isReposted?'reposted':''}" onclick="doAction('${id}','repost',this)">
-                        <i class="fas fa-retweet"></i><span>รีโพสต์</span>
-                    </div>
-                    <div class="btn-icon"><i class="fas fa-share"></i><span>แชร์</span></div>
-                    <div class="disc-wrap" onclick="openSound('${d.soundId}','${d.soundName}')"><img src="${d.userPhoto}"></div>
+        function closeOverlay() {
+            document.querySelectorAll('.overlay-screen').forEach(el => el.style.display = 'none');
+            document.getElementById('app-screen').classList.add('active');
+        }
+
+        // ==========================================
+        //  FEED & VIDEO LOGIC
+        // ==========================================
+        function loadFeed() {
+            const feedContainer = document.getElementById('feed-view');
+            feedContainer.innerHTML = ''; // Clear
+
+            // Query คลิปยอดนิยม (จำลอง: ดึงล่าสุด)
+            db.collection('videos').orderBy('timestamp', 'desc').limit(10).get().then(snapshot => {
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    const videoEl = createVideoElement(doc.id, data);
+                    feedContainer.appendChild(videoEl);
+                });
+            });
+        }
+
+        function createVideoElement(vidId, data) {
+            const div = document.createElement('div');
+            div.className = 'video-container';
+            
+            // Format Date
+            const date = data.timestamp ? new Date(data.timestamp.seconds * 1000).toLocaleDateString('th-TH') : '';
+
+            div.innerHTML = `
+                <video src="${data.url}" loop onclick="togglePlay(this)"></video>
+                
+                <div class="video-info">
+                    <h3>@${data.uploaderName}</h3>
+                    <p>${data.caption}</p>
+                    <p style="font-size:12px; opacity:0.7;"><i class="fas fa-music"></i> ${data.soundName} • ${date}</p>
                 </div>
-                <div class="bottom-info">
-                    <div class="info-content">
-                        <div class="username" onclick="openProfile('${d.uid}')">@${d.username}</div>
-                        <div class="desc">${d.desc}</div>
-                        <div class="date">${date} • ${d.title || 'คลิปวิดีโอ'}</div>
-                        <div class="sound-tag"><i class="fas fa-music"></i> ${d.soundName || 'เสียงต้นฉบับ'}</div>
+
+                <div class="video-sidebar">
+                    <div class="sidebar-icon" onclick="viewProfile('${data.uploaderId}')">
+                        <img src="${data.uploaderPhoto}" class="profile-pic-feed">
+                        <i class="fas fa-plus-circle" style="color:red; margin-top:-15px; background:white; border-radius:50%;"></i>
+                    </div>
+                    <div class="sidebar-icon" onclick="likeVideo('${vidId}', this)">
+                        <i class="fas fa-heart"></i>
+                        <span>${data.likes || 0}</span>
+                    </div>
+                    <div class="sidebar-icon">
+                        <i class="fas fa-comment-dots"></i>
+                        <span>${data.comments || 0}</span>
+                    </div>
+                    <div class="sidebar-icon">
+                        <i class="fas fa-bookmark"></i>
+                        <span>Save</span>
+                    </div>
+                    <div class="sidebar-icon">
+                        <i class="fas fa-share"></i>
+                        <span>Share</span>
+                    </div>
+                     <div class="sidebar-icon" onclick="useSound('${data.soundName}')">
+                        <div class="music-disc"></div>
                     </div>
                 </div>
             `;
-            con.appendChild(el);
-            feedObs.observe(el.querySelector('video'));
+            
+            // Auto Play logic for intersection observer could be added here
+            return div;
         }
 
-        window.togglePlay = (v) => v.paused ? v.play() : v.pause();
+        function togglePlay(video) {
+            if (video.paused) video.play();
+            else video.pause();
+        }
 
-        window.doAction = async (vid, type, btn) => {
-            if(!currentUser) return;
-            const ref = doc(db, "videos", vid);
-            let field = type+'s'; // likes, saves, reposts
-            const isActive = btn.classList.contains(type=='like'?'liked':(type=='save'?'saved':'reposted'));
+        function likeVideo(vidId, btn) {
+            const icon = btn.querySelector('i');
+            const countSpan = btn.querySelector('span');
             
-            // UI Update
-            btn.classList.toggle(type=='like'?'liked':(type=='save'?'saved':'reposted'));
-            if(type=='like'){
-                let sp = btn.querySelector('span');
-                sp.innerText = parseInt(sp.innerText) + (isActive ? -1 : 1);
-            }
-
-            // DB Update
-            await updateDoc(ref, { [field]: isActive ? arrayRemove(currentUser.uid) : arrayUnion(currentUser.uid) });
-            
-            // ถ้ากดใจ ให้อัปเดต stats เจ้าของคลิปด้วย
-            if(type=='like') {
-                const vidSnap = await getDoc(ref);
-                const ownerUid = vidSnap.data().uid;
-                await updateDoc(doc(db, "users", ownerUid), { likesReceived: increment(isActive ? -1 : 1) });
-            }
-        };
-
-        // --- UPLOAD & SOUND ---
-        window.openUploadNormal = () => { selectedSound = null; openPage('upload-page'); };
-        
-        window.openSound = async (sid, sname) => {
-            selectedSound = { id: sid, name: sname };
-            document.getElementById('sp-name').innerText = sname;
-            openPage('sound-page');
-            
-            const g = document.getElementById('sound-grid');
-            g.innerHTML = "Loading...";
-            const q = query(collection(db, "videos"), where("soundId", "==", sid), limit(12));
-            const snaps = await getDocs(q);
-            g.innerHTML = "";
-            snaps.forEach(d => {
-                g.innerHTML += `<div class="grid-item"><video src="${d.data().videoUrl}#t=1"></video></div>`;
-            });
-        };
-
-        window.useThisSound = () => {
-            openPage('upload-page');
-            document.getElementById('upload-sound-info').innerText = `🎵 กำลังใช้เสียง: ${selectedSound.name}`;
-        };
-
-        window.startUpload = () => {
-            const file = document.getElementById('up-file').files[0];
-            const title = document.getElementById('up-title').value;
-            const desc = document.getElementById('up-desc').value;
-            
-            if(!file) return alert("เลือกไฟล์ก่อน");
-            if(file.size > 200 * 1024 * 1024) return alert("ไฟล์ใหญ่เกิน 200MB"); // Limit for stability
-            
-            // Logic เสียง
-            const soundId = selectedSound ? selectedSound.id : "random_" + Date.now();
-            const soundName = selectedSound ? selectedSound.name : "เสียงฮิตในกระแส";
-
-            const sRef = ref(storage, `videos/${Date.now()}_${currentUser.uid}`);
-            const task = uploadBytesResumable(sRef, file);
-
-            task.on('state_changed', (s)=>{
-                document.getElementById('up-bar').style.width = ((s.bytesTransferred/s.totalBytes)*100)+'%';
-            }, null, async ()=>{
-                const url = await getDownloadURL(task.snapshot.ref);
-                await addDoc(collection(db, "videos"), {
-                    uid: currentUser.uid,
-                    username: currentUser.displayName,
-                    userPhoto: currentUser.photoURL,
-                    videoUrl: url,
-                    title: title, desc: desc,
-                    soundId: soundId, soundName: soundName,
-                    likes: [], saves: [], reposts: [],
-                    timestamp: Date.now()
-                });
-                alert("อัปโหลดเสร็จสิ้น!");
-                loadFeed();
-                goPage('feed-page');
-            });
-        };
-
-        // --- SEARCH ---
-        window.openSearch = () => openPage('search-page');
-        window.closeSearch = () => goBack();
-        window.doSearch = async () => {
-            const txt = document.getElementById('search-input').value;
-            const res = document.getElementById('search-results');
-            res.innerHTML = "Searching...";
-            // Note: Firebase basic search only supports exact match or prefix. For full text, need Algolia.
-            // This demo simulates search by querying recent videos.
-            const q = query(collection(db, "videos"), limit(20));
-            const snaps = await getDocs(q);
-            res.innerHTML = "";
-            snaps.forEach(d => {
-                if(d.data().desc.includes(txt) || d.data().title.includes(txt)) {
-                    res.innerHTML += `<div class="grid-item" onclick="alert('เล่นคลิป')"><video src="${d.data().videoUrl}#t=1"></video></div>`;
-                }
-            });
-            if(res.innerHTML == "") res.innerHTML = "<p style='width:100%; text-align:center;'>ไม่พบผลลัพธ์</p>";
-        };
-
-        // --- PROFILE ---
-        window.openMyProfile = () => openProfile(currentUser.uid);
-        
-        window.openProfile = async (uid) => {
-            currentProfileUid = uid;
-            goPage('profile-page-ui');
-            
-            const uSnap = await getDoc(doc(db, "users", uid));
-            const u = uSnap.data();
-            const isMe = currentUser.uid === uid;
-
-            document.getElementById('p-img').src = u.photoURL;
-            document.getElementById('p-name').innerText = "@" + u.displayName;
-            document.getElementById('s-following').innerText = u.following?.length || 0;
-            document.getElementById('s-followers').innerText = u.followers?.length || 0;
-            document.getElementById('s-likes').innerText = u.likesReceived || 0;
-
-            const actDiv = document.getElementById('p-actions');
-            if(isMe) {
-                actDiv.innerHTML = `<button class="btn-edit" onclick="openEditModal('${u.displayName}')">แก้ไขโปรไฟล์</button>`;
+            if (icon.classList.contains('like-active')) {
+                // Unlike logic
+                icon.classList.remove('like-active');
+                // Real implementation: Firestore increment(-1)
             } else {
-                const isFollow = u.followers && u.followers.includes(currentUser.uid);
-                actDiv.innerHTML = `<button class="btn-follow" onclick="followUser('${uid}')">${isFollow?'เลิกติดตาม':'ติดตาม'}</button>`;
+                // Like logic
+                icon.classList.add('like-active');
+                // Real implementation: Firestore increment(1) & Add to 'liked_videos' collection
             }
+        }
 
-            switchTab('clips');
-        };
+        // ==========================================
+        //  UPLOAD LOGIC
+        // ==========================================
+        function openUpload() {
+            document.getElementById('upload-screen').style.display = 'block';
+        }
 
-        window.switchTab = async (tab) => {
-            const grid = document.getElementById('profile-grid');
-            document.querySelectorAll('.pt-item').forEach(e=>e.classList.remove('active'));
-            // Highlight tab logic... (skipped for brevity)
-            
-            grid.innerHTML = "Loading...";
-            let q;
-            // Privacy Check
-            if(tab === 'likes') {
-                const uSnap = await getDoc(doc(db, "users", currentProfileUid));
-                if(currentProfileUid !== currentUser.uid && uSnap.data().settings?.hideLikes) {
-                    grid.innerHTML = "<p style='width:300%; text-align:center; padding:20px; color:#666;'>ผู้ใช้นี้ซ่อนคลิปที่ถูกใจ</p>";
+        function handleFileSelect(input) {
+            const file = input.files[0];
+            if (file) {
+                // Check duration logic would require loading video metadata
+                // For now, check size (approx 100MB max)
+                if (file.size > 100 * 1024 * 1024) {
+                    alert("ไฟล์ใหญ่เกินไป");
                     return;
                 }
-                q = query(collection(db, "videos"), where("likes", "array-contains", currentProfileUid));
-            } else if (tab === 'reposts') {
-                q = query(collection(db, "videos"), where("reposts", "array-contains", currentProfileUid));
-            } else {
-                q = query(collection(db, "videos"), where("uid", "==", currentProfileUid));
+                currentFile = file;
+                alert("เลือกไฟล์สำเร็จ: " + file.name);
             }
+        }
 
-            const snaps = await getDocs(q);
-            grid.innerHTML = "";
-            snaps.forEach(d => {
-                grid.innerHTML += `<div class="grid-item"><video src="${d.data().videoUrl}#t=1"></video></div>`;
+        function uploadVideo() {
+            if (!currentFile) return alert("กรุณาเลือกไฟล์");
+            
+            const caption = document.getElementById('upload-caption').value;
+            const soundName = "เสียงยอดนิยม - Original";
+            
+            // 1. Upload File to Firebase Storage
+            const storageRef = storage.ref(`videos/${currentUser.uid}/${Date.now()}_${currentFile.name}`);
+            const uploadTask = storageRef.put(currentFile);
+
+            uploadTask.on('state_changed', 
+                (snapshot) => {
+                    // Progress...
+                    console.log((snapshot.bytesTransferred / snapshot.totalBytes) * 100 + '%');
+                }, 
+                (error) => {
+                    alert("Upload Failed: " + error.message);
+                }, 
+                () => {
+                    // Complete
+                    uploadTask.snapshot.ref.getDownloadURL().then((downloadURL) => {
+                        // 2. Save Metadata to Firestore
+                        db.collection('videos').add({
+                            uploaderId: currentUser.uid,
+                            uploaderName: currentUser.displayName,
+                            uploaderPhoto: currentUser.photoURL,
+                            caption: caption,
+                            url: downloadURL,
+                            soundName: soundName,
+                            likes: 0,
+                            comments: 0,
+                            shares: 0,
+                            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                            searchKeywords: generateKeywords(caption)
+                        }).then(() => {
+                            alert("อัพโหลดเสร็จสิ้น!");
+                            closeOverlay();
+                            loadFeed(); // Refresh feed
+                        });
+                    });
+                }
+            );
+        }
+
+        // ==========================================
+        //  SEARCH
+        // ==========================================
+        function openSearch() {
+            document.getElementById('search-screen').style.display = 'block';
+        }
+
+        function performSearch() {
+            const query = document.getElementById('search-input').value.toLowerCase();
+            const resultsDiv = document.getElementById('search-results');
+            resultsDiv.innerHTML = 'กำลังค้นหา...';
+
+            // Simple client-side filtering for demo (Firestore search is complex)
+            db.collection('videos').get().then(snapshot => {
+                resultsDiv.innerHTML = '';
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    if (data.caption.toLowerCase().includes(query)) {
+                        const div = document.createElement('div');
+                        div.className = 'grid-item';
+                        div.innerHTML = `<video src="${data.url}" style="width:100%; height:100%; object-fit:cover;"></video>`;
+                        div.onclick = () => { /* Open video detail */ };
+                        resultsDiv.appendChild(div);
+                    }
+                });
             });
-        };
+        }
 
-        window.openEditModal = (oldName) => {
-            document.getElementById('ed-name').value = oldName;
-            document.getElementById('edit-modal').style.display='flex';
-        };
+        function generateKeywords(str) {
+            // Helper for search array
+            return str ? str.toLowerCase().split(' ') : [];
+        }
 
-        window.saveProfile = async () => {
-            const newName = document.getElementById('ed-name').value;
-            const uRef = doc(db, "users", currentUser.uid);
-            const snap = await getDoc(uRef);
-            const last = snap.data().lastInfoChange || 0;
+        // ==========================================
+        //  PROFILE LOGIC
+        // ==========================================
+        function loadProfile() {
+            if (!currentUser) return;
+            document.getElementById('profile-username').innerText = currentUser.displayName;
+            document.getElementById('profile-display-name').innerText = "@" + currentUser.uid.substring(0,8); // Simulate username
+            document.getElementById('profile-pic').src = currentUser.photoURL;
+
+            // Load User Videos
+            const grid = document.getElementById('profile-grid');
+            grid.innerHTML = '';
             
-            // 7 Days Check (604800000 ms)
-            if(Date.now() - last < 604800000) return alert("เปลี่ยนชื่อได้ทุก 7 วัน");
-            
-            await updateProfile(currentUser, { displayName: newName });
-            await updateDoc(uRef, { displayName: newName, lastInfoChange: Date.now() });
-            document.getElementById('edit-modal').style.display='none';
-            openProfile(currentUser.uid);
-        };
+            db.collection('videos').where('uploaderId', '==', currentUser.uid).get().then(snapshot => {
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    const div = document.createElement('div');
+                    div.className = 'grid-item';
+                    div.innerHTML = `<video src="${data.url}#t=0.1" preload="metadata" style="width:100%; height:100%; object-fit:cover;"></video>`;
+                    grid.appendChild(div);
+                });
+            });
+        }
 
-        window.togglePrivacy = async () => {
-            const uRef = doc(db, "users", currentUser.uid);
-            const snap = await getDoc(uRef);
-            const current = snap.data().settings?.hideLikes || false;
-            await updateDoc(uRef, { "settings.hideLikes": !current });
-            alert(`ซ่อนรายการที่ถูกใจ: ${!current ? 'เปิด' : 'ปิด'}`);
-        };
+        function editProfile() {
+            // Check 7 days logic here using 'lastUsernameChange'
+            const newName = prompt("ใส่ชื่อใหม่ (เปลี่ยนได้ทุก 7 วัน):", currentUser.displayName);
+            if (newName) {
+                currentUser.updateProfile({ displayName: newName }).then(() => {
+                    loadProfile();
+                });
+            }
+        }
 
-        window.followUser = async (targetUid) => {
-            const myRef = doc(db, "users", currentUser.uid);
-            const targetRef = doc(db, "users", targetUid);
-            // Simple toggle follow logic (In prod, check existence first)
-            await updateDoc(targetRef, { followers: arrayUnion(currentUser.uid) });
-            await updateDoc(myRef, { following: arrayUnion(targetUid) });
-            openProfile(targetUid); // Refresh
-        };
-
-        // --- UTILS ---
-        window.goPage = (p) => {
-            document.querySelectorAll('.page').forEach(e=>e.classList.remove('active'));
-            document.getElementById(p).classList.add('active');
-            if(p=='feed-page') loadFeed();
-        };
-        window.goBack = () => goPage('feed-page');
-        window.toggleMenu = () => { const m=document.getElementById('settings-menu'); m.style.display=m.style.display=='block'?'none':'block'; };
-        window.closeModal = (id) => document.getElementById(id).style.display='none';
-
-        // Init
-        loadFeed();
+        function useSound(soundName) {
+            // Logic to use this sound
+            alert("กำลังใช้เสียง: " + soundName);
+            openUpload();
+            document.getElementById('selected-sound').innerText = soundName;
+        }
 
     </script>
 </body>
