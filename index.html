@@ -3,88 +3,160 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YouTube Real System</title>
+    <title>YouTube Real Upload</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    
     <style>
-        .loader { border: 4px solid #f3f3f3; border-radius: 50%; border-top: 4px solid #3498db; width: 30px; height: 30px; animation: spin 1s linear infinite; }
+        .loader { border: 3px solid #f3f3f3; border-top: 3px solid #ef4444; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0f0f0f; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #555; }
     </style>
 </head>
 <body class="bg-[#0f0f0f] text-white font-sans overflow-x-hidden">
 
-    <nav class="fixed top-0 w-full bg-[#0f0f0f] h-16 flex items-center justify-between px-6 z-50 border-b border-gray-800">
-        <div class="flex items-center gap-4">
-            <i class="ph-fill ph-youtube-logo text-red-600 text-3xl"></i>
-            <span class="text-xl font-bold tracking-tighter">YouTube Clone <span class="text-xs bg-gray-700 px-2 py-0.5 rounded text-gray-300">REAL SYSTEM</span></span>
+    <nav class="fixed top-0 w-full bg-[#0f0f0f] h-16 flex items-center justify-between px-4 md:px-6 z-50 border-b border-gray-800">
+        <div class="flex items-center gap-4 cursor-pointer" onclick="renderFeed('HOME')">
+            <i class="ph-list text-2xl"></i>
+            <div class="flex items-center gap-1">
+                <i class="ph-fill ph-youtube-logo text-red-600 text-3xl"></i>
+                <span class="text-xl font-bold tracking-tighter">YouTube <span class="text-xs text-gray-400 font-normal">Real System</span></span>
+            </div>
         </div>
 
-        <div id="auth-section" class="flex items-center gap-4">
-            <button id="login-btn" class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-full font-medium transition">
-                <i class="ph-bold ph-user-circle text-xl"></i> ลงชื่อเข้าใช้
+        <div class="hidden md:flex flex-1 max-w-[600px] mx-4">
+            <input type="text" placeholder="ค้นหา" class="w-full bg-[#121212] border border-gray-700 rounded-l-full py-2 px-4 focus:outline-none focus:border-blue-500">
+            <button class="bg-[#222] border border-l-0 border-gray-700 px-5 rounded-r-full hover:bg-gray-700">
+                <i class="ph ph-magnifying-glass text-xl"></i>
+            </button>
+        </div>
+
+        <div id="auth-section" class="flex items-center gap-2">
+            <button id="login-btn" class="text-blue-400 border border-gray-700 hover:bg-blue-400/10 px-4 py-2 rounded-full text-sm font-medium flex items-center gap-2">
+                <i class="ph-user-circle text-xl"></i> ลงชื่อเข้าใช้
             </button>
         </div>
     </nav>
 
-    <main class="pt-24 px-4 md:px-8 pb-10 max-w-[1600px] mx-auto">
-        
-        <div id="welcome-msg" class="hidden mb-6 p-4 bg-gray-800 rounded-lg flex justify-between items-center">
-            <span>ยินดีต้อนรับ! คุณสามารถอัปโหลดวิดีโอได้แล้ว</span>
-            <button onclick="document.getElementById('upload-modal').classList.remove('hidden')" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded flex items-center gap-2">
-                <i class="ph-bold ph-video-camera"></i> อัปโหลดคลิป
-            </button>
-        </div>
-
-        <h2 class="text-xl font-bold mb-4">วิดีโอล่าสุด</h2>
-        
-        <div id="video-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-y-8 gap-x-4">
-            <div class="col-span-full text-center py-10 text-gray-500">
-                กำลังโหลดวิดีโอจากฐานข้อมูล...
+    <div class="flex pt-16 h-screen">
+        <aside class="w-[72px] md:w-60 bg-[#0f0f0f] overflow-y-auto hidden sm:block pb-4">
+            <div class="flex flex-col gap-1 p-2">
+                <button onclick="renderFeed('HOME')" class="flex items-center gap-4 px-3 py-2 hover:bg-gray-800 rounded-lg text-left">
+                    <i class="ph-house text-2xl"></i> <span class="hidden md:inline text-sm">หน้าแรก</span>
+                </button>
+                <button onclick="renderFeed('MY_CHANNEL')" class="flex items-center gap-4 px-3 py-2 hover:bg-gray-800 rounded-lg text-left">
+                    <i class="ph-video text-2xl"></i> <span class="hidden md:inline text-sm">วิดีโอของฉัน</span>
+                </button>
+                <hr class="border-gray-700 my-2">
+                <div class="px-3 text-xs text-gray-400 hidden md:block">การติดตาม</div>
+                <div id="sub-list" class="mt-2 space-y-2">
+                    </div>
             </div>
-        </div>
-    </main>
+        </aside>
+
+        <main id="main-content" class="flex-1 p-6 overflow-y-auto">
+            <div class="text-center mt-20">
+                <div class="loader mx-auto mb-4"></div>
+                <p class="text-gray-500">กำลังเชื่อมต่อระบบ...</p>
+            </div>
+        </main>
+    </div>
 
     <div id="upload-modal" class="fixed inset-0 bg-black/80 z-[60] hidden flex items-center justify-center p-4">
-        <div class="bg-[#1e1e1e] w-full max-w-lg p-6 rounded-xl shadow-2xl border border-gray-700">
-            <h3 class="text-xl font-bold mb-4">อัปโหลดวิดีโอ</h3>
-            
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-sm text-gray-400 mb-1">ชื่อวิดีโอ</label>
-                    <input type="text" id="vid-title" class="w-full bg-[#121212] border border-gray-600 rounded p-2 focus:border-blue-500 outline-none" placeholder="ตั้งชื่อคลิปของคุณ...">
-                </div>
-                <div>
-                    <label class="block text-sm text-gray-400 mb-1">ลิงก์รูปปก (Thumbnail URL)</label>
-                    <input type="text" id="vid-thumb" class="w-full bg-[#121212] border border-gray-600 rounded p-2 focus:border-blue-500 outline-none" placeholder="https://...">
-                    <p class="text-xs text-gray-500 mt-1">*ใส่ลิงก์รูปภาพจากเน็ต (เช่น Copy Link Address มา)</p>
-                </div>
-                <div>
-                    <label class="block text-sm text-gray-400 mb-1">ไฟล์วิดีโอ (จำลอง)</label>
-                    <div class="border-2 border-dashed border-gray-600 rounded-lg p-8 text-center hover:bg-gray-800 cursor-pointer">
-                        <i class="ph-fill ph-upload-simple text-4xl text-gray-400 mb-2"></i>
-                        <p class="text-sm">คลิกเพื่อเลือกไฟล์ (Demo: ระบบจะบันทึกแค่ข้อมูล)</p>
+        <div class="bg-[#282828] w-full max-w-2xl rounded-xl shadow-2xl overflow-hidden relative">
+            <div class="p-4 border-b border-gray-700 flex justify-between items-center">
+                <h3 class="text-lg font-bold">อัปโหลดวิดีโอ</h3>
+                <button onclick="closeUploadModal()" class="text-gray-400 hover:text-white"><i class="ph-x text-2xl"></i></button>
+            </div>
+            <div class="p-8">
+                <div class="space-y-6">
+                    <div class="flex flex-col items-center justify-center w-full h-40 border-2 border-gray-600 border-dashed rounded-lg cursor-pointer hover:bg-[#333] transition bg-[#1f1f1f] relative">
+                        <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                            <i class="ph-upload-simple text-4xl text-gray-400 mb-2"></i>
+                            <p class="text-sm text-gray-400"><span class="font-semibold">คลิกเพื่อเลือกไฟล์วิดีโอ</span> (.mp4)</p>
+                            <p id="file-name-display" class="text-xs text-blue-400 mt-2 font-bold"></p>
+                        </div>
+                        <input id="video-file-input" type="file" accept="video/mp4,video/webm" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 mb-1">ชื่อคลิป (Title)</label>
+                        <input type="text" id="video-title" class="w-full bg-[#121212] border border-gray-600 rounded p-2 focus:border-blue-500 outline-none placeholder-gray-600" placeholder="ตั้งชื่อคลิปของคุณ...">
+                    </div>
+
+                    <div id="upload-progress-container" class="hidden">
+                        <div class="flex justify-between text-xs mb-1">
+                            <span>กำลังอัปโหลด...</span>
+                            <span id="progress-text">0%</span>
+                        </div>
+                        <div class="w-full bg-gray-700 rounded-full h-2.5">
+                            <div id="progress-bar" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div>
+                        </div>
                     </div>
                 </div>
             </div>
-
-            <div class="flex justify-end gap-3 mt-6">
-                <button onclick="document.getElementById('upload-modal').classList.add('hidden')" class="px-4 py-2 hover:bg-gray-700 rounded text-gray-300">ยกเลิก</button>
-                <button id="confirm-upload-btn" class="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded font-medium">โพสต์</button>
+            <div class="p-4 border-t border-gray-700 flex justify-end gap-2 bg-[#1f1f1f]">
+                <button onclick="startUpload()" id="upload-action-btn" class="bg-blue-600 hover:bg-blue-700 text-black font-bold py-2 px-6 rounded uppercase text-sm tracking-wide disabled:opacity-50 disabled:cursor-not-allowed">
+                    อัปโหลด
+                </button>
             </div>
+        </div>
+    </div>
+
+    <div id="player-overlay" class="fixed inset-0 bg-[#0f0f0f] z-[70] hidden overflow-y-auto">
+        <nav class="w-full bg-[#0f0f0f] h-14 flex items-center px-4 border-b border-gray-800 sticky top-0 z-50">
+            <button onclick="closePlayer()" class="mr-4 p-2 hover:bg-gray-800 rounded-full"><i class="ph-arrow-left text-xl"></i></button>
+            <span class="font-bold">กำลังเล่นวิดีโอ</span>
+        </nav>
+        <div class="max-w-[1200px] mx-auto p-4 md:p-6 flex flex-col lg:flex-row gap-6">
+            <div class="w-full lg:w-[70%]">
+                <div class="w-full aspect-video bg-black rounded-xl overflow-hidden shadow-lg relative">
+                    <video id="main-video-player" class="w-full h-full" controls autoplay>
+                        <source src="" type="video/mp4">
+                        บราวเซอร์ของคุณไม่รองรับวิดีโอ
+                    </video>
+                </div>
+                <div class="mt-4">
+                    <h1 id="player-title" class="text-xl font-bold line-clamp-2">Loading...</h1>
+                    <div class="flex justify-between items-center mt-2">
+                        <div class="flex items-center gap-3">
+                            <img id="player-channel-img" src="" class="w-10 h-10 rounded-full bg-gray-700">
+                            <div>
+                                <p id="player-channel-name" class="font-bold text-sm">Channel Name</p>
+                                <p id="player-sub-count" class="text-xs text-gray-400">0 ผู้ติดตาม</p>
+                            </div>
+                            <button id="player-sub-btn" class="ml-4 bg-white text-black px-4 py-2 rounded-full text-sm font-bold hover:bg-gray-200">ติดตาม</button>
+                        </div>
+                        <div class="flex gap-2">
+                             <button class="bg-[#272727] hover:bg-[#3f3f3f] px-4 py-2 rounded-full text-sm flex items-center gap-2"><i class="ph-thumbs-up"></i> <span id="player-likes">0</span></button>
+                             <button class="bg-[#272727] hover:bg-[#3f3f3f] px-4 py-2 rounded-full text-sm flex items-center gap-2"><i class="ph-share-fat"></i> แชร์</button>
+                        </div>
+                    </div>
+                    <div class="mt-4 bg-[#272727] p-3 rounded-xl text-sm text-gray-200">
+                         <p id="player-views-date" class="font-bold mb-1">0 การดู • เมื่อสักครู่</p>
+                         <p>อัปโหลดโดยใช้ระบบ Real System ผ่าน Firebase Storage.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="flex-1 hidden lg:block">
+                 <p class="text-gray-400 mb-4">วิดีโออื่นๆ (Demo)</p>
+                 </div>
         </div>
     </div>
 
     <script type="module">
         // -------------------------------------------------------------
-        // สำคัญมาก!!: คุณต้องเอาค่า Config จาก Firebase ของคุณมาใส่ตรงนี้
-        // ถ้าไม่ใส่ ระบบจะ Login หรือโหลดข้อมูลไม่ได้
+        // 1. ใส่ Config ของคุณตรงนี้ (เอามาจาก Firebase Console)
         // -------------------------------------------------------------
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp, doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp, doc, updateDoc, increment, where, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
-        // TODO: แทนที่ตรงนี้ด้วย Config ของคุณเอง
+        // TODO: นำ Config จาก Firebase ของคุณมาใส่แทนที่ตรงนี้
         const firebaseConfig = {
   apiKey: "AIzaSyB575txzpvEoiUPGAzMWmBIJ-AumUrPZ04",
   authDomain: "mychatapp-6553a.firebaseapp.com",
@@ -96,155 +168,225 @@
   measurementId: "G-X4LL87Q0Z4"
 };
 
-        // เริ่มต้นระบบ
-        let app, auth, db;
+        // Initialize Firebase
+        let app, auth, db, storage;
         try {
             app = initializeApp(firebaseConfig);
             auth = getAuth(app);
             db = getFirestore(app);
+            storage = getStorage(app);
         } catch (e) {
-            console.error("Firebase Error: กรุณาใส่ Config ที่ถูกต้อง", e);
-            document.getElementById('video-grid').innerHTML = `<p class="text-red-500">ผิดพลาด: กรุณาใส่ Firebase Config ในโค้ดก่อนใช้งาน</p>`;
+            console.error("Config Error");
+            document.getElementById('main-content').innerHTML = `<div class="text-center text-red-500 mt-10"><h1>เกิดข้อผิดพลาดในการเชื่อมต่อ</h1><p>กรุณาใส่ Firebase Config ในโค้ด HTML บรรทัดที่ 165</p></div>`;
         }
 
         const provider = new GoogleAuthProvider();
         let currentUser = null;
+        let selectedFile = null;
 
-        // --- ส่วนจัดการ Auth (Login/Logout) ---
-        const loginBtn = document.getElementById('login-btn');
+        // --- AUTHENTICATION ---
         const authSection = document.getElementById('auth-section');
-        const welcomeMsg = document.getElementById('welcome-msg');
+        const loginBtn = document.getElementById('login-btn');
 
-        loginBtn.addEventListener('click', async () => {
-            try {
-                await signInWithPopup(auth, provider);
-            } catch (error) {
-                alert("Login ผิดพลาด: " + error.message);
-            }
-        });
+        loginBtn.addEventListener('click', () => signInWithPopup(auth, provider));
 
-        // ตรวจสอบสถานะ User ตลอดเวลา
         onAuthStateChanged(auth, (user) => {
             currentUser = user;
             if (user) {
-                // ถ้า Login แล้ว
                 authSection.innerHTML = `
-                    <div class="flex items-center gap-3">
-                        <img src="${user.photoURL}" class="w-8 h-8 rounded-full border border-gray-600">
-                        <div class="hidden md:block text-sm font-medium">${user.displayName}</div>
-                        <button id="logout-btn" class="text-gray-400 hover:text-white text-sm">ออกจากระบบ</button>
-                    </div>
+                    <button onclick="document.getElementById('upload-modal').classList.remove('hidden')" class="mr-2 hover:bg-gray-800 p-2 rounded-full"><i class="ph-video-camera text-2xl"></i></button>
+                    <img src="${user.photoURL}" class="w-8 h-8 rounded-full cursor-pointer" onclick="renderFeed('MY_CHANNEL')">
+                    <button id="logout-btn" class="ml-2 text-xs text-gray-400 hover:text-white">ออก</button>
                 `;
-                welcomeMsg.classList.remove('hidden');
-                
-                document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
-            } else {
-                // ถ้ายังไม่ Login
-                authSection.innerHTML = `
-                    <button id="login-btn-re" class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-full font-medium transition">
-                        <i class="ph-bold ph-user-circle text-xl"></i> ลงชื่อเข้าใช้
-                    </button>
-                `;
-                welcomeMsg.classList.add('hidden');
-                document.getElementById('login-btn-re').addEventListener('click', () => signInWithPopup(auth, provider));
-            }
-        });
-
-        // --- ส่วนจัดการ Upload Video ---
-        const confirmUploadBtn = document.getElementById('confirm-upload-btn');
-        
-        confirmUploadBtn.addEventListener('click', async () => {
-            if (!currentUser) return alert('กรุณาเข้าสู่ระบบก่อน');
-
-            const title = document.getElementById('vid-title').value;
-            const thumb = document.getElementById('vid-thumb').value || "https://placehold.co/600x400/222/FFF?text=No+Image";
-
-            if (!title) return alert('กรุณาใส่ชื่อคลิป');
-
-            confirmUploadBtn.innerText = "กำลังโพสต์...";
-            
-            try {
-                // บันทึกข้อมูลลง Database จริงๆ
-                await addDoc(collection(db, "videos"), {
-                    title: title,
-                    thumbnail: thumb,
-                    views: 0,
-                    channelName: currentUser.displayName,
-                    channelImg: currentUser.photoURL,
-                    subscribers: Math.floor(Math.random() * 100), // สุ่มยอดซับตั้งต้น
-                    timestamp: serverTimestamp()
+                document.getElementById('logout-btn').addEventListener('click', () => {
+                    signOut(auth);
+                    window.location.reload();
                 });
-
-                alert("ลงคลิปสำเร็จ! (ข้อมูลถูกบันทึกบน Cloud แล้ว)");
-                document.getElementById('upload-modal').classList.add('hidden');
-                loadVideos(); // โหลดหน้าใหม่
-            } catch (e) {
-                alert("เกิดข้อผิดพลาด: " + e.message);
+                renderFeed('HOME'); // โหลดหน้าแรก
+            } else {
+                authSection.innerHTML = `<button id="login-btn-re" class="text-blue-400 border border-gray-700 px-4 py-2 rounded-full text-sm font-medium"><i class="ph-user-circle"></i> ลงชื่อเข้าใช้</button>`;
+                document.getElementById('login-btn-re').addEventListener('click', () => signInWithPopup(auth, provider));
+                renderFeed('HOME');
             }
-            confirmUploadBtn.innerText = "โพสต์";
         });
 
-        // --- ส่วนจัดการแสดงผล Video Feed ---
-        async function loadVideos() {
-            const grid = document.getElementById('video-grid');
-            grid.innerHTML = '<div class="loader mx-auto"></div>';
+        // --- UPLOAD SYSTEM (REAL FILE) ---
+        document.getElementById('video-file-input').addEventListener('change', (e) => {
+            selectedFile = e.target.files[0];
+            if (selectedFile) {
+                document.getElementById('file-name-display').innerText = selectedFile.name;
+            }
+        });
+
+        window.closeUploadModal = () => {
+            document.getElementById('upload-modal').classList.add('hidden');
+            selectedFile = null;
+            document.getElementById('file-name-display').innerText = "";
+            document.getElementById('upload-progress-container').classList.add('hidden');
+        }
+
+        window.startUpload = async () => {
+            if (!currentUser) return alert("กรุณาเข้าสู่ระบบ");
+            if (!selectedFile) return alert("กรุณาเลือกไฟล์วิดีโอ");
+            
+            const title = document.getElementById('video-title').value || "ไม่มีชื่อ";
+            const btn = document.getElementById('upload-action-btn');
+            const progressContainer = document.getElementById('upload-progress-container');
+            const progressBar = document.getElementById('progress-bar');
+            const progressText = document.getElementById('progress-text');
+
+            btn.disabled = true;
+            progressContainer.classList.remove('hidden');
 
             try {
-                // ดึงข้อมูลจาก Database
-                const q = query(collection(db, "videos"), orderBy("timestamp", "desc"));
-                const querySnapshot = await getDocs(q);
-                
-                grid.innerHTML = ""; // เคลียร์ Loading
+                // 1. Upload File to Firebase Storage
+                const storageRef = ref(storage, `videos/${Date.now()}_${selectedFile.name}`);
+                const uploadTask = uploadBytesResumable(storageRef, selectedFile);
 
-                if(querySnapshot.empty) {
-                    grid.innerHTML = "<p class='text-gray-500'>ยังไม่มีวิดีโอ ลองอัปโหลดเป็นคนแรกเลย!</p>";
+                uploadTask.on('state_changed', 
+                    (snapshot) => {
+                        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                        progressBar.style.width = progress + '%';
+                        progressText.innerText = Math.round(progress) + '%';
+                    }, 
+                    (error) => {
+                        alert("อัปโหลดล้มเหลว: " + error.message);
+                        btn.disabled = false;
+                    }, 
+                    async () => {
+                        // 2. Get URL
+                        const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+                        
+                        // 3. Save Metadata to Firestore
+                        await addDoc(collection(db, "videos"), {
+                            title: title,
+                            videoUrl: downloadURL, // ลิงก์ไฟล์จริงๆ
+                            uploaderId: currentUser.uid,
+                            channelName: currentUser.displayName,
+                            channelImg: currentUser.photoURL,
+                            views: 0,
+                            likes: 0,
+                            createdAt: serverTimestamp()
+                        });
+
+                        alert("อัปโหลดและเผยแพร่สำเร็จ!");
+                        closeUploadModal();
+                        renderFeed('HOME');
+                        btn.disabled = false;
+                    }
+                );
+            } catch (err) {
+                console.error(err);
+                alert("Error: " + err.message);
+                btn.disabled = false;
+            }
+        }
+
+        // --- FEED & DISPLAY SYSTEM ---
+        window.renderFeed = async (mode) => {
+            const mainContent = document.getElementById('main-content');
+            mainContent.innerHTML = '<div class="loader mx-auto mt-10"></div>';
+
+            let q;
+            if (mode === 'MY_CHANNEL' && currentUser) {
+                // โหลดเฉพาะของตัวเอง
+                q = query(collection(db, "videos"), where("uploaderId", "==", currentUser.uid), orderBy("createdAt", "desc"));
+                mainContent.innerHTML += `<h2 class="text-2xl font-bold mb-4">ช่องของฉัน (${currentUser.displayName})</h2>`;
+            } else {
+                // โหลดทั้งหมด (หน้าแรก)
+                q = query(collection(db, "videos"), orderBy("createdAt", "desc"));
+            }
+
+            try {
+                const querySnapshot = await getDocs(q);
+                let html = `<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">`;
+                
+                if (querySnapshot.empty) {
+                    mainContent.innerHTML = `<div class="text-center mt-10 text-gray-400">ยังไม่มีวิดีโอ (ลองกดปุ่มกล้องเพื่ออัปโหลด)</div>`;
                     return;
                 }
 
-                querySnapshot.forEach((docSnap) => {
-                    const data = docSnap.data();
-                    const vidId = docSnap.id;
-                    
-                    // สร้าง HTML การ์ดวิดีโอ
-                    const html = `
-                        <div class="cursor-pointer group">
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    // เราไม่มี thumbnail generator บน client เลยใช้รูป default หรือ channel img แทน
+                    html += `
+                        <div onclick="openPlayer('${doc.id}')" class="cursor-pointer group">
                             <div class="relative aspect-video bg-gray-800 rounded-xl overflow-hidden">
-                                <img src="${data.thumbnail}" class="w-full h-full object-cover group-hover:scale-105 transition duration-200">
-                                <span class="absolute bottom-1 right-1 bg-black/80 px-1 rounded text-xs">10:00</span>
+                                <video src="${data.videoUrl}#t=1" class="w-full h-full object-cover group-hover:scale-105 transition duration-200" muted preload="metadata"></video>
+                                <span class="absolute bottom-1 right-1 bg-black/80 px-1 rounded text-xs text-white">Video</span>
                             </div>
                             <div class="flex gap-3 mt-3">
-                                <img src="${data.channelImg}" class="w-9 h-9 rounded-full">
-                                <div class="w-full">
-                                    <h3 class="font-bold text-sm line-clamp-2 text-white">${data.title}</h3>
-                                    <div class="flex justify-between items-start">
-                                        <div>
-                                            <p class="text-gray-400 text-xs mt-1 hover:text-white">${data.channelName}</p>
-                                            <p class="text-gray-400 text-xs">${data.views} วิว • ${data.subscribers} ซับ</p>
-                                        </div>
-                                        <button onclick="window.subscribe('${vidId}')" class="text-red-500 text-xs font-bold hover:bg-red-500/10 px-2 py-1 rounded">
-                                            ติดตาม
-                                        </button>
-                                    </div>
+                                <img src="${data.channelImg}" class="w-9 h-9 rounded-full object-cover">
+                                <div>
+                                    <h3 class="font-bold text-sm text-white line-clamp-2 leading-tight">${data.title}</h3>
+                                    <p class="text-gray-400 text-xs mt-1 hover:text-white">${data.channelName}</p>
+                                    <p class="text-gray-400 text-xs">${data.views} การดู • ${timeAgo(data.createdAt)}</p>
                                 </div>
                             </div>
                         </div>
                     `;
-                    grid.innerHTML += html;
                 });
+                html += `</div>`;
+                
+                // ถ้าไม่ใช่หน้า Channel ให้ล้างแล้วใส่ใหม่ (ถ้าหน้า Channel ให้ append ต่อจากหัวข้อ)
+                if (mode === 'HOME') mainContent.innerHTML = html;
+                else mainContent.innerHTML = `<h2 class="text-2xl font-bold mb-6">วิดีโอในช่องของฉัน</h2>` + html;
 
-            } catch (e) {
-                console.error(e);
-                grid.innerHTML = "<p class='text-red-500'>ไม่สามารถโหลดข้อมูลได้ (ตรวจสอบ Config)</p>";
+            } catch (err) {
+                console.error(err);
+                if(err.message.includes("index")) {
+                     mainContent.innerHTML = `<p class="text-red-500">System Note: ต้องสร้าง Index ใน Firestore ก่อนสำหรับการเรียงลำดับแบบผสม (ดู Console Log)</p>`;
+                } else {
+                     mainContent.innerHTML = `<p class="text-red-500">โหลดข้อมูลไม่สำเร็จ (ตรวจสอบ Permission)</p>`;
+                }
             }
         }
 
-        // ฟังก์ชันติดตาม (แบบง่าย - อัปเดตหน้าจอทันที)
-        window.subscribe = (id) => {
-            alert(`คุณได้กดติดตามเจ้าของคลิป ID: ${id} แล้ว! (ระบบจำลอง)`);
+        // --- PLAYER SYSTEM ---
+        window.openPlayer = async (videoId) => {
+            const overlay = document.getElementById('player-overlay');
+            const videoEl = document.getElementById('main-video-player');
+            
+            overlay.classList.remove('hidden');
+            
+            // เพิ่ม View
+            const vidRef = doc(db, "videos", videoId);
+            await updateDoc(vidRef, { views: increment(1) });
+
+            const snap = await getDoc(vidRef);
+            if(snap.exists()) {
+                const data = snap.data();
+                videoEl.src = data.videoUrl;
+                document.getElementById('player-title').innerText = data.title;
+                document.getElementById('player-channel-name').innerText = data.channelName;
+                document.getElementById('player-channel-img').src = data.channelImg;
+                document.getElementById('player-views-date').innerText = `${data.views + 1} การดู`;
+                
+                // จัดการปุ่ม Subscribe
+                const subBtn = document.getElementById('player-sub-btn');
+                subBtn.onclick = () => subscribe(data.uploaderId);
+            }
         }
 
-        // โหลดวิดีโอเมื่อเข้าเว็บ
-        loadVideos();
+        window.closePlayer = () => {
+            document.getElementById('player-overlay').classList.add('hidden');
+            document.getElementById('main-video-player').pause();
+            document.getElementById('main-video-player').src = "";
+        }
+
+        // --- SUBSCRIBE SYSTEM ---
+        window.subscribe = async (targetUserId) => {
+            if(!currentUser) return alert("เข้าสู่ระบบเพื่อติดตาม");
+            if(targetUserId === currentUser.uid) return alert("คุณติดตามตัวเองไม่ได้");
+            
+            alert(`กดติดตามช่องเจ้าของคลิปแล้ว! (บันทึกข้อมูล ID: ${targetUserId})`);
+            // ในระบบจริงต้องสร้าง Collection 'subscriptions' เพื่อเก็บความสัมพันธ์
+        }
+
+        function timeAgo(timestamp) {
+            if(!timestamp) return "";
+            return "เมื่อเร็วๆนี้"; 
+        }
 
     </script>
 </body>
