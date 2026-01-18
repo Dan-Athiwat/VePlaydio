@@ -2,393 +2,465 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YouTube Real Upload</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>NextGen iOS Fix (V4.3)</title>
+    <script src="https://download.agora.io/sdk/release/AgoraRTC_N-4.18.2.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
+    
     <style>
-        .loader { border: 3px solid #f3f3f3; border-top: 3px solid #ef4444; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #0f0f0f; }
-        ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #555; }
+        /* --- THEME --- */
+        :root {
+            --primary: #007AFF; --bg: #121212; --surface: #1e1e1e;
+            --text: #ffffff; --danger: #ff3b30; --success: #34c759;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Kanit', sans-serif; -webkit-tap-highlight-color: transparent; }
+        
+        body {
+            background-color: var(--bg); color: var(--text);
+            height: 100vh; width: 100vw; overflow: hidden;
+            display: flex; flex-direction: column;
+        }
+
+        /* --- COMPONENTS --- */
+        .btn {
+            border: none; border-radius: 12px; padding: 12px 20px; cursor: pointer;
+            font-size: 1rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+            transition: 0.2s; width: 100%; color: white;
+        }
+        .btn:active { transform: scale(0.96); }
+        .btn-primary { background: var(--primary); }
+        .btn-danger { background: var(--danger); }
+        .btn-outline { background: transparent; border: 1px solid #444; width: auto; }
+
+        input {
+            width: 100%; padding: 14px; background: #2c2c2e; border: 1px solid #3a3a3c;
+            border-radius: 10px; color: white; outline: none; margin-bottom: 15px; font-size: 1rem;
+        }
+
+        /* --- SCREENS --- */
+        .screen { display: none; width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 10; background: var(--bg); }
+        .screen.active { display: flex; }
+
+        /* Auth Screen */
+        .auth-container {
+            justify-content: center; align-items: center;
+            background: radial-gradient(circle, #2a2a2a 0%, #000000 100%); padding: 20px;
+        }
+        .auth-box {
+            width: 100%; max-width: 400px; background: rgba(30, 30, 30, 0.95);
+            padding: 40px; border-radius: 20px; text-align: center;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+        }
+        .switch-btn {
+            background: none; border: none; color: var(--primary); margin-top: 20px;
+            cursor: pointer; text-decoration: underline; font-size: 0.9rem;
+        }
+
+        /* --- DASHBOARD --- */
+        #dashboard-screen { flex-direction: row; }
+        .sidebar {
+            width: 320px; background: var(--surface); border-right: 1px solid #333;
+            display: flex; flex-direction: column; padding: 20px; overflow-y: auto; z-index: 20;
+        }
+        .mobile-header { display: none; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        
+        .profile-card { text-align: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid #333; }
+        .avatar-frame {
+            width: 100px; height: 100px; margin: 0 auto 15px; border-radius: 50%;
+            border: 3px solid var(--primary); overflow: hidden; position: relative;
+        }
+        .avatar-img { width: 100%; height: 100%; object-fit: cover; }
+        .edit-badge {
+            position: absolute; bottom: 0; width: 100%; background: rgba(0,0,0,0.7);
+            color: white; font-size: 10px; padding: 4px; cursor: pointer;
+        }
+
+        .room-card {
+            background: #2a2a2a; padding: 15px; border-radius: 10px; margin-bottom: 10px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+
+        .main-content {
+            flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center;
+            background: var(--bg); position: relative;
+        }
+        .mobile-back-btn { display: none; position: absolute; top: 20px; left: 20px; color: white; font-size: 1.5rem; cursor: pointer; }
+        .join-box { text-align: center; width: 90%; max-width: 350px; }
+        .join-input-group { display: flex; gap: 10px; }
+
+        /* --- VIDEO ROOM --- */
+        #video-screen { background: black; flex-direction: column; }
+        .video-grid {
+            flex: 1; width: 100%; height: 100%; display: grid; gap: 8px; padding: 10px; padding-bottom: 100px;
+            align-content: center; justify-content: center;
+        }
+
+        .video-item {
+            background: #222; border-radius: 12px; overflow: hidden; position: relative;
+            width: 100%; height: 100%; min-height: 200px; box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+        .video-player { width: 100%; height: 100%; object-fit: cover; }
+        .video-player.screen-share { object-fit: contain; background: #111; } 
+        
+        .name-label {
+            position: absolute; bottom: 10px; left: 10px; background: rgba(0,0,0,0.6);
+            color: white; padding: 4px 10px; border-radius: 6px; font-size: 0.8rem;
+        }
+
+        /* Controls */
+        .controls {
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            display: flex; gap: 15px; background: rgba(40,40,40,0.95);
+            padding: 12px 25px; border-radius: 50px; backdrop-filter: blur(10px); z-index: 100;
+            width: 90%; max-width: 500px; justify-content: space-around;
+        }
+        .ctrl-btn {
+            width: 50px; height: 50px; border-radius: 50%; border: none; background: #3a3a3c;
+            color: white; font-size: 1.2rem; cursor: pointer; display: flex; align-items: center; justify-content: center;
+        }
+        .ctrl-btn.active { background: white; color: black; }
+        .ctrl-btn.off { background: rgba(255,255,255,0.1); color: var(--danger); }
+        .ctrl-btn.hangup { background: var(--danger); color: white; width: 60px; }
+
+        /* --- MOBILE RESPONSIVE --- */
+        @media (max-width: 768px) {
+            #dashboard-screen { flex-direction: column; }
+            .sidebar { width: 100%; height: 100%; border: none; padding: 20px; display: flex; }
+            
+            .main-content { 
+                position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+                background: var(--bg); z-index: 30; transform: translateX(100%); transition: transform 0.3s ease;
+            }
+            .main-content.show-mobile { transform: translateX(0); }
+            
+            .mobile-header { display: flex; }
+            .mobile-back-btn { display: block; }
+            .join-input-group { flex-direction: column; }
+
+            .video-grid { 
+                display: flex; flex-direction: column; overflow-y: auto; justify-content: flex-start;
+            }
+            .video-item { flex-shrink: 0; height: 250px; margin-bottom: 10px; }
+        }
+        
+        @media (min-width: 769px) {
+            .grid-1 { grid-template-columns: 1fr; }
+            .grid-2 { grid-template-columns: 1fr 1fr; }
+            .grid-3 { grid-template-columns: repeat(3, 1fr); }
+            .grid-4 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
+            .grid-5, .grid-6 { grid-template-columns: repeat(3, 1fr); grid-template-rows: 1fr 1fr; }
+        }
     </style>
 </head>
-<body class="bg-[#0f0f0f] text-white font-sans overflow-x-hidden">
+<body>
 
-    <nav class="fixed top-0 w-full bg-[#0f0f0f] h-16 flex items-center justify-between px-4 md:px-6 z-50 border-b border-gray-800">
-        <div class="flex items-center gap-4 cursor-pointer" onclick="renderFeed('HOME')">
-            <i class="ph-list text-2xl"></i>
-            <div class="flex items-center gap-1">
-                <i class="ph-fill ph-youtube-logo text-red-600 text-3xl"></i>
-                <span class="text-xl font-bold tracking-tighter">YouTube <span class="text-xs text-gray-400 font-normal">Real System</span></span>
-            </div>
+    <div id="login-ui" class="screen auth-container">
+        <div class="auth-box">
+            <h2 style="margin-bottom:20px;">เข้าสู่ระบบ</h2>
+            <input type="text" id="l-name" placeholder="ชื่อผู้ใช้">
+            <input type="tel" id="l-phone" placeholder="เบอร์โทรศัพท์">
+            <button class="btn btn-primary" onclick="doLogin()">เข้าสู่ระบบ</button>
+            <button class="switch-btn" type="button" onclick="goToRegister()">ยังไม่มีบัญชี? สร้างผู้ใช้ใหม่</button>
         </div>
+    </div>
 
-        <div class="hidden md:flex flex-1 max-w-[600px] mx-4">
-            <input type="text" placeholder="ค้นหา" class="w-full bg-[#121212] border border-gray-700 rounded-l-full py-2 px-4 focus:outline-none focus:border-blue-500">
-            <button class="bg-[#222] border border-l-0 border-gray-700 px-5 rounded-r-full hover:bg-gray-700">
-                <i class="ph ph-magnifying-glass text-xl"></i>
+    <div id="register-ui" class="screen auth-container">
+        <div class="auth-box">
+            <h2 style="margin-bottom:20px;">สร้างผู้ใช้ใหม่</h2>
+            <input type="text" id="r-name" placeholder="ชื่อ (ห้ามซ้ำ)">
+            <input type="tel" id="r-phone" placeholder="เบอร์โทรศัพท์">
+            <button class="btn btn-primary" onclick="doRegister()">ยืนยันการสมัคร</button>
+            <button class="switch-btn" type="button" onclick="goToLogin()">มีบัญชีแล้ว? เข้าสู่ระบบ</button>
+        </div>
+    </div>
+
+    <div id="dashboard-screen" class="screen">
+        <div class="sidebar">
+            <div class="mobile-header">
+                <h3>โปรไฟล์ของคุณ</h3>
+                <button class="btn btn-primary" style="width:auto; padding: 8px 12px;" onclick="toggleMobileJoin(true)">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+
+            <div class="profile-card">
+                <div class="avatar-frame">
+                    <img id="user-pic" src="https://via.placeholder.com/100" class="avatar-img">
+                    <label for="up-pic" class="edit-badge">แก้ไข</label>
+                    <input type="file" id="up-pic" hidden accept="image/*" onchange="updatePic(this)">
+                </div>
+                <h3 id="user-name">Loading...</h3>
+                <p id="user-phone" style="color:#aaa; font-size:0.9rem;">...</p>
+                <div style="margin-top:10px; display:flex; gap:10px; justify-content:center;">
+                    <button class="btn btn-outline" style="font-size:0.8rem; padding:5px 10px;" onclick="editName()"><i class="fas fa-pen"></i> แก้ชื่อ</button>
+                    <button class="btn btn-danger" style="width:auto; font-size:0.8rem; padding:5px 10px;" onclick="logout()"><i class="fas fa-sign-out-alt"></i></button>
+                </div>
+            </div>
+
+            <h4 style="margin-bottom:10px; color:#aaa;">จัดการห้อง</h4>
+            <button class="btn btn-primary" style="margin-bottom:20px;" onclick="createRoom()">
+                <i class="fas fa-plus"></i> สร้างห้องใหม่
             </button>
+
+            <h4 style="margin-bottom:10px; color:#aaa;">ประวัติห้องของคุณ</h4>
+            <div id="room-list" class="room-history"></div>
         </div>
 
-        <div id="auth-section" class="flex items-center gap-2">
-            <button id="login-btn" class="text-blue-400 border border-gray-700 hover:bg-blue-400/10 px-4 py-2 rounded-full text-sm font-medium flex items-center gap-2">
-                <i class="ph-user-circle text-xl"></i> ลงชื่อเข้าใช้
-            </button>
-        </div>
-    </nav>
-
-    <div class="flex pt-16 h-screen">
-        <aside class="w-[72px] md:w-60 bg-[#0f0f0f] overflow-y-auto hidden sm:block pb-4">
-            <div class="flex flex-col gap-1 p-2">
-                <button onclick="renderFeed('HOME')" class="flex items-center gap-4 px-3 py-2 hover:bg-gray-800 rounded-lg text-left">
-                    <i class="ph-house text-2xl"></i> <span class="hidden md:inline text-sm">หน้าแรก</span>
-                </button>
-                <button onclick="renderFeed('MY_CHANNEL')" class="flex items-center gap-4 px-3 py-2 hover:bg-gray-800 rounded-lg text-left">
-                    <i class="ph-video text-2xl"></i> <span class="hidden md:inline text-sm">วิดีโอของฉัน</span>
-                </button>
-                <hr class="border-gray-700 my-2">
-                <div class="px-3 text-xs text-gray-400 hidden md:block">การติดตาม</div>
-                <div id="sub-list" class="mt-2 space-y-2">
-                    </div>
-            </div>
-        </aside>
-
-        <main id="main-content" class="flex-1 p-6 overflow-y-auto">
-            <div class="text-center mt-20">
-                <div class="loader mx-auto mb-4"></div>
-                <p class="text-gray-500">กำลังเชื่อมต่อระบบ...</p>
-            </div>
-        </main>
-    </div>
-
-    <div id="upload-modal" class="fixed inset-0 bg-black/80 z-[60] hidden flex items-center justify-center p-4">
-        <div class="bg-[#282828] w-full max-w-2xl rounded-xl shadow-2xl overflow-hidden relative">
-            <div class="p-4 border-b border-gray-700 flex justify-between items-center">
-                <h3 class="text-lg font-bold">อัปโหลดวิดีโอ</h3>
-                <button onclick="closeUploadModal()" class="text-gray-400 hover:text-white"><i class="ph-x text-2xl"></i></button>
-            </div>
-            <div class="p-8">
-                <div class="space-y-6">
-                    <div class="flex flex-col items-center justify-center w-full h-40 border-2 border-gray-600 border-dashed rounded-lg cursor-pointer hover:bg-[#333] transition bg-[#1f1f1f] relative">
-                        <div class="flex flex-col items-center justify-center pt-5 pb-6">
-                            <i class="ph-upload-simple text-4xl text-gray-400 mb-2"></i>
-                            <p class="text-sm text-gray-400"><span class="font-semibold">คลิกเพื่อเลือกไฟล์วิดีโอ</span> (.mp4)</p>
-                            <p id="file-name-display" class="text-xs text-blue-400 mt-2 font-bold"></p>
-                        </div>
-                        <input id="video-file-input" type="file" accept="video/mp4,video/webm" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-bold text-gray-400 mb-1">ชื่อคลิป (Title)</label>
-                        <input type="text" id="video-title" class="w-full bg-[#121212] border border-gray-600 rounded p-2 focus:border-blue-500 outline-none placeholder-gray-600" placeholder="ตั้งชื่อคลิปของคุณ...">
-                    </div>
-
-                    <div id="upload-progress-container" class="hidden">
-                        <div class="flex justify-between text-xs mb-1">
-                            <span>กำลังอัปโหลด...</span>
-                            <span id="progress-text">0%</span>
-                        </div>
-                        <div class="w-full bg-gray-700 rounded-full h-2.5">
-                            <div id="progress-bar" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div>
-                        </div>
-                    </div>
+        <div id="main-content" class="main-content">
+            <div class="mobile-back-btn" onclick="toggleMobileJoin(false)"><i class="fas fa-arrow-left"></i></div>
+            <div class="join-box">
+                <i class="fas fa-broadcast-tower" style="font-size:4rem; color:#444; margin-bottom:20px;"></i>
+                <h2>เข้าร่วมการสนทนา</h2>
+                <div class="join-input-group">
+                    <input type="text" id="join-id" placeholder="กรอก Room ID" style="margin-bottom:0;">
+                    <button class="btn btn-primary" style="width: auto; min-width: 80px;" onclick="joinRoomFromInput()">เข้าร่วม</button>
                 </div>
-            </div>
-            <div class="p-4 border-t border-gray-700 flex justify-end gap-2 bg-[#1f1f1f]">
-                <button onclick="startUpload()" id="upload-action-btn" class="bg-blue-600 hover:bg-blue-700 text-black font-bold py-2 px-6 rounded uppercase text-sm tracking-wide disabled:opacity-50 disabled:cursor-not-allowed">
-                    อัปโหลด
-                </button>
             </div>
         </div>
     </div>
 
-    <div id="player-overlay" class="fixed inset-0 bg-[#0f0f0f] z-[70] hidden overflow-y-auto">
-        <nav class="w-full bg-[#0f0f0f] h-14 flex items-center px-4 border-b border-gray-800 sticky top-0 z-50">
-            <button onclick="closePlayer()" class="mr-4 p-2 hover:bg-gray-800 rounded-full"><i class="ph-arrow-left text-xl"></i></button>
-            <span class="font-bold">กำลังเล่นวิดีโอ</span>
-        </nav>
-        <div class="max-w-[1200px] mx-auto p-4 md:p-6 flex flex-col lg:flex-row gap-6">
-            <div class="w-full lg:w-[70%]">
-                <div class="w-full aspect-video bg-black rounded-xl overflow-hidden shadow-lg relative">
-                    <video id="main-video-player" class="w-full h-full" controls autoplay>
-                        <source src="" type="video/mp4">
-                        บราวเซอร์ของคุณไม่รองรับวิดีโอ
-                    </video>
-                </div>
-                <div class="mt-4">
-                    <h1 id="player-title" class="text-xl font-bold line-clamp-2">Loading...</h1>
-                    <div class="flex justify-between items-center mt-2">
-                        <div class="flex items-center gap-3">
-                            <img id="player-channel-img" src="" class="w-10 h-10 rounded-full bg-gray-700">
-                            <div>
-                                <p id="player-channel-name" class="font-bold text-sm">Channel Name</p>
-                                <p id="player-sub-count" class="text-xs text-gray-400">0 ผู้ติดตาม</p>
-                            </div>
-                            <button id="player-sub-btn" class="ml-4 bg-white text-black px-4 py-2 rounded-full text-sm font-bold hover:bg-gray-200">ติดตาม</button>
-                        </div>
-                        <div class="flex gap-2">
-                             <button class="bg-[#272727] hover:bg-[#3f3f3f] px-4 py-2 rounded-full text-sm flex items-center gap-2"><i class="ph-thumbs-up"></i> <span id="player-likes">0</span></button>
-                             <button class="bg-[#272727] hover:bg-[#3f3f3f] px-4 py-2 rounded-full text-sm flex items-center gap-2"><i class="ph-share-fat"></i> แชร์</button>
-                        </div>
-                    </div>
-                    <div class="mt-4 bg-[#272727] p-3 rounded-xl text-sm text-gray-200">
-                         <p id="player-views-date" class="font-bold mb-1">0 การดู • เมื่อสักครู่</p>
-                         <p>อัปโหลดโดยใช้ระบบ Real System ผ่าน Firebase Storage.</p>
-                    </div>
-                </div>
-            </div>
-            <div class="flex-1 hidden lg:block">
-                 <p class="text-gray-400 mb-4">วิดีโออื่นๆ (Demo)</p>
-                 </div>
+    <div id="video-screen" class="screen">
+        <div style="position:absolute; top:15px; left:20px; z-index:50; background:rgba(0,0,0,0.5); padding:5px 15px; border-radius:20px;">
+            <i class="fas fa-hashtag" style="color:var(--primary)"></i> <span id="room-display">ID: --</span>
+        </div>
+        <div id="video-grid" class="video-grid grid-1"></div>
+        <div class="controls">
+            <button class="ctrl-btn active" id="btn-mic" onclick="toggleMic()"><i class="fas fa-microphone"></i></button>
+            <button class="ctrl-btn active" id="btn-cam" onclick="toggleCam()"><i class="fas fa-video"></i></button>
+            <button class="ctrl-btn active" id="btn-vol" onclick="toggleSpeaker()"><i class="fas fa-volume-up"></i></button>
+            <button class="ctrl-btn off" id="btn-screen" onclick="toggleShare()"><i class="fas fa-desktop"></i></button>
+            <button class="ctrl-btn hangup" onclick="leaveRoom()"><i class="fas fa-phone-slash"></i></button>
         </div>
     </div>
 
-    <script type="module">
-        // -------------------------------------------------------------
-        // 1. ใส่ Config ของคุณตรงนี้ (เอามาจาก Firebase Console)
-        // -------------------------------------------------------------
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp, doc, updateDoc, increment, where, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-        import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+    <script>
+        // ==========================================
+        // ⚙️ CONFIGURATION (ใส่ APP ID ตรงนี้)
+        // ==========================================
+        const AGORA_APP_ID = "ebab3ce9350a43c4bf6fb4312a3dbd23"; 
 
-        // TODO: นำ Config จาก Firebase ของคุณมาใส่แทนที่ตรงนี้
-        // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: "AIzaSyB575txzpvEoiUPGAzMWmBIJ-AumUrPZ04",
-  authDomain: "mychatapp-6553a.firebaseapp.com",
-  databaseURL: "https://mychatapp-6553a-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "mychatapp-6553a",
-  storageBucket: "mychatapp-6553a.firebasestorage.app",
-  messagingSenderId: "327022378740",
-  appId: "1:327022378740:web:381b0688ed36b48a90e8a1",
-  measurementId: "G-X4LL87Q0Z4"
-};
-
-        // Initialize Firebase
-        let app, auth, db, storage;
-        try {
-            app = initializeApp(firebaseConfig);
-            auth = getAuth(app);
-            db = getFirestore(app);
-            storage = getStorage(app);
-        } catch (e) {
-            console.error("Config Error");
-            document.getElementById('main-content').innerHTML = `<div class="text-center text-red-500 mt-10"><h1>เกิดข้อผิดพลาดในการเชื่อมต่อ</h1><p>กรุณาใส่ Firebase Config ในโค้ด HTML บรรทัดที่ 165</p></div>`;
-        }
-
-        const provider = new GoogleAuthProvider();
+        // State
         let currentUser = null;
-        let selectedFile = null;
+        // ⚠️ iOS Fix: เปลี่ยน Codec เป็น H.264 เพื่อป้องกันการเด้ง
+        let client = AgoraRTC.createClient({ mode: "rtc", codec: "h264" });
+        
+        let localTracks = { audio: null, video: null, screen: null };
+        let remoteUsers = {};
+        let isScreenSharing = false;
+        let isSpeakerOn = true;
 
-        // --- AUTHENTICATION ---
-        const authSection = document.getElementById('auth-section');
-        const loginBtn = document.getElementById('login-btn');
-
-        loginBtn.addEventListener('click', () => signInWithPopup(auth, provider));
-
-        onAuthStateChanged(auth, (user) => {
-            currentUser = user;
-            if (user) {
-                authSection.innerHTML = `
-                    <button onclick="document.getElementById('upload-modal').classList.remove('hidden')" class="mr-2 hover:bg-gray-800 p-2 rounded-full"><i class="ph-video-camera text-2xl"></i></button>
-                    <img src="${user.photoURL}" class="w-8 h-8 rounded-full cursor-pointer" onclick="renderFeed('MY_CHANNEL')">
-                    <button id="logout-btn" class="ml-2 text-xs text-gray-400 hover:text-white">ออก</button>
-                `;
-                document.getElementById('logout-btn').addEventListener('click', () => {
-                    signOut(auth);
-                    window.location.reload();
-                });
-                renderFeed('HOME'); // โหลดหน้าแรก
+        // --- INIT ---
+        window.onload = () => {
+            if(location.protocol !== 'https:' && location.hostname !== 'localhost') {
+                alert("⚠️ iOS ต้องรันบน HTTPS เท่านั้น ไม่อย่างนั้นจะเด้งออก");
+            }
+            const saved = localStorage.getItem('currUser');
+            if(saved) {
+                currentUser = JSON.parse(saved);
+                showScreen('dashboard');
+                renderProfile();
             } else {
-                authSection.innerHTML = `<button id="login-btn-re" class="text-blue-400 border border-gray-700 px-4 py-2 rounded-full text-sm font-medium"><i class="ph-user-circle"></i> ลงชื่อเข้าใช้</button>`;
-                document.getElementById('login-btn-re').addEventListener('click', () => signInWithPopup(auth, provider));
-                renderFeed('HOME');
+                showScreen('login');
             }
-        });
+        };
 
-        // --- UPLOAD SYSTEM (REAL FILE) ---
-        document.getElementById('video-file-input').addEventListener('change', (e) => {
-            selectedFile = e.target.files[0];
-            if (selectedFile) {
-                document.getElementById('file-name-display').innerText = selectedFile.name;
-            }
-        });
-
-        window.closeUploadModal = () => {
-            document.getElementById('upload-modal').classList.add('hidden');
-            selectedFile = null;
-            document.getElementById('file-name-display').innerText = "";
-            document.getElementById('upload-progress-container').classList.add('hidden');
+        // --- NAVIGATION & AUTH ---
+        function showScreen(name) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            if(name === 'login') document.getElementById('login-ui').classList.add('active');
+            else if(name === 'register') document.getElementById('register-ui').classList.add('active');
+            else if(name === 'dashboard') document.getElementById('dashboard-screen').classList.add('active');
+            else if(name === 'video') document.getElementById('video-screen').classList.add('active');
+        }
+        function goToRegister() { showScreen('register'); }
+        function goToLogin() { showScreen('login'); }
+        function toggleMobileJoin(show) {
+            const main = document.getElementById('main-content');
+            if(show) main.classList.add('show-mobile'); else main.classList.remove('show-mobile');
         }
 
-        window.startUpload = async () => {
-            if (!currentUser) return alert("กรุณาเข้าสู่ระบบ");
-            if (!selectedFile) return alert("กรุณาเลือกไฟล์วิดีโอ");
+        function doRegister() {
+            const name = document.getElementById('r-name').value.trim();
+            const phone = document.getElementById('r-phone').value.trim();
+            if(!name || !phone) return alert("กรอกข้อมูลให้ครบ");
+            let db = JSON.parse(localStorage.getItem('userDB') || "[]");
+            if(db.find(u => u.name === name)) return alert("ชื่อนี้ซ้ำ");
+            db.push({ name, phone, pic: null }); localStorage.setItem('userDB', JSON.stringify(db));
+            alert("สมัครสำเร็จ!"); goToLogin();
+        }
+        function doLogin() {
+            const name = document.getElementById('l-name').value.trim();
+            const phone = document.getElementById('l-phone').value.trim();
+            let db = JSON.parse(localStorage.getItem('userDB') || "[]");
+            const user = db.find(u => u.name === name && u.phone === phone);
+            if(user) { currentUser = user; localStorage.setItem('currUser', JSON.stringify(user)); showScreen('dashboard'); renderProfile(); }
+            else { alert("ข้อมูลไม่ถูกต้อง"); }
+        }
+        function logout() { localStorage.removeItem('currUser'); location.reload(); }
+
+        // --- PROFILE ---
+        function renderProfile() {
+            document.getElementById('user-name').innerText = currentUser.name;
+            document.getElementById('user-phone').innerText = currentUser.phone;
+            if(currentUser.pic) document.getElementById('user-pic').src = currentUser.pic;
+            const list = document.getElementById('room-list'); list.innerHTML = '';
+            let myRooms = JSON.parse(localStorage.getItem('myRooms') || "[]");
+            myRooms.forEach(r => {
+                list.innerHTML += `<div class="room-card">
+                    <div><div style="color:var(--primary); font-weight:bold;">ID: ${r.id}</div><small>${r.date}</small></div>
+                    <button class="btn btn-primary" style="width:auto; font-size:0.8rem; padding:5px 15px;" onclick="joinRoom('${r.id}')">Join</button>
+                </div>`;
+            });
+        }
+        function updatePic(input) {
+            if(input.files[0]) {
+                const r = new FileReader();
+                r.onload = (e) => {
+                    currentUser.pic = e.target.result; localStorage.setItem('currUser', JSON.stringify(currentUser));
+                    let db = JSON.parse(localStorage.getItem('userDB'));
+                    const i = db.findIndex(u => u.name === currentUser.name);
+                    if(i > -1) { db[i] = currentUser; localStorage.setItem('userDB', JSON.stringify(db)); }
+                    renderProfile();
+                }; r.readAsDataURL(input.files[0]);
+            }
+        }
+        function editName() {
+            const n = prompt("ชื่อใหม่:", currentUser.name);
+            if(n) { currentUser.name = n; localStorage.setItem('currUser', JSON.stringify(currentUser)); renderProfile(); }
+        }
+
+        // --- ROOMS ---
+        function createRoom() {
+            const id = Math.floor(1000 + Math.random() * 9000).toString();
+            let rooms = JSON.parse(localStorage.getItem('myRooms') || "[]");
+            rooms.unshift({ id, date: new Date().toLocaleDateString() });
+            localStorage.setItem('myRooms', JSON.stringify(rooms)); renderProfile(); joinRoom(id);
+        }
+        function joinRoomFromInput() { const id = document.getElementById('join-id').value; if(id) joinRoom(id); }
+
+        // --- VIDEO CALL (IOS STABLE) ---
+        async function joinRoom(roomId) {
+            if(AGORA_APP_ID.length < 10) return alert("⚠️ ใส่ App ID ด้วยครับ");
             
-            const title = document.getElementById('video-title').value || "ไม่มีชื่อ";
-            const btn = document.getElementById('upload-action-btn');
-            const progressContainer = document.getElementById('upload-progress-container');
-            const progressBar = document.getElementById('progress-bar');
-            const progressText = document.getElementById('progress-text');
-
-            btn.disabled = true;
-            progressContainer.classList.remove('hidden');
-
+            showScreen('video');
+            document.getElementById('room-display').innerText = "ID: " + roomId;
+            
             try {
-                // 1. Upload File to Firebase Storage
-                const storageRef = ref(storage, `videos/${Date.now()}_${selectedFile.name}`);
-                const uploadTask = uploadBytesResumable(storageRef, selectedFile);
-
-                uploadTask.on('state_changed', 
-                    (snapshot) => {
-                        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                        progressBar.style.width = progress + '%';
-                        progressText.innerText = Math.round(progress) + '%';
-                    }, 
-                    (error) => {
-                        alert("อัปโหลดล้มเหลว: " + error.message);
-                        btn.disabled = false;
-                    }, 
-                    async () => {
-                        // 2. Get URL
-                        const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-                        
-                        // 3. Save Metadata to Firestore
-                        await addDoc(collection(db, "videos"), {
-                            title: title,
-                            videoUrl: downloadURL, // ลิงก์ไฟล์จริงๆ
-                            uploaderId: currentUser.uid,
-                            channelName: currentUser.displayName,
-                            channelImg: currentUser.photoURL,
-                            views: 0,
-                            likes: 0,
-                            createdAt: serverTimestamp()
-                        });
-
-                        alert("อัปโหลดและเผยแพร่สำเร็จ!");
-                        closeUploadModal();
-                        renderFeed('HOME');
-                        btn.disabled = false;
+                const uid = await client.join(AGORA_APP_ID, roomId, null, null);
+                
+                // ⚠️ iOS Fix: ใช้ config แบบธรรมดาเพื่อลดภาระเครื่อง
+                try {
+                    [localTracks.audio, localTracks.video] = await AgoraRTC.createMicrophoneAndCameraTracks(
+                        { encoderConfig: "music_standard" },
+                        { encoderConfig: "360p_1" } // ลดความละเอียดเล็กน้อยเพื่อความเสถียรบน iOS
+                    );
+                } catch (err) {
+                    console.error("Device Error:", err);
+                    if(err.name === "NotAllowedError" || err.code === "PERMISSION_DENIED") {
+                        alert("❌ ไม่ได้รับอนุญาตให้ใช้กล้อง (Permission Denied)\nกรุณาไปที่ Settings > Safari > Camera > Allow");
+                    } else {
+                        alert("เกิดข้อผิดพลาดในการเปิดกล้อง: " + err.name + "\n(กรุณาลองรีเฟรชหน้าเว็บ)");
                     }
-                );
-            } catch (err) {
-                console.error(err);
-                alert("Error: " + err.message);
-                btn.disabled = false;
+                    leaveRoom(); return;
+                }
+
+                addVideo(uid, localTracks.video, true, false);
+                await client.publish([localTracks.audio, localTracks.video]);
+
+            } catch(e) { 
+                console.error(e);
+                // ไม่สั่ง leaveRoom() ทันทีถ้าเป็น Error เล็กน้อย เพื่อป้องกันการเด้งออกโดยไม่จำเป็น
+                if(e.code === "UID_CONFLICT" || e.code === "INVALID_TOKEN") {
+                    alert("การเชื่อมต่อมีปัญหา: " + e.code);
+                    leaveRoom();
+                }
             }
         }
 
-        // --- FEED & DISPLAY SYSTEM ---
-        window.renderFeed = async (mode) => {
-            const mainContent = document.getElementById('main-content');
-            mainContent.innerHTML = '<div class="loader mx-auto mt-10"></div>';
-
-            let q;
-            if (mode === 'MY_CHANNEL' && currentUser) {
-                // โหลดเฉพาะของตัวเอง
-                q = query(collection(db, "videos"), where("uploaderId", "==", currentUser.uid), orderBy("createdAt", "desc"));
-                mainContent.innerHTML += `<h2 class="text-2xl font-bold mb-4">ช่องของฉัน (${currentUser.displayName})</h2>`;
-            } else {
-                // โหลดทั้งหมด (หน้าแรก)
-                q = query(collection(db, "videos"), orderBy("createdAt", "desc"));
+        client.on("user-published", async (user, mediaType) => {
+            await client.subscribe(user, mediaType);
+            remoteUsers[user.uid] = user;
+            if(mediaType === "video") addVideo(user.uid, user.videoTrack, false, false);
+            if(mediaType === "audio") {
+                // ⚠️ iOS Fix: ป้องกัน Audio Autoplay Error
+                try {
+                    user.audioTrack.play();
+                } catch(err) { console.log("Audio Play Failed (iOS Restriction)"); }
+                
+                if(!isSpeakerOn) user.audioTrack.setVolume(0);
             }
+            updateGrid();
+        });
+        client.on("user-unpublished", (user, mediaType) => { if(mediaType === "video") removeVideo(user.uid); });
+        client.on("user-left", (user) => { delete remoteUsers[user.uid]; removeVideo(user.uid); });
 
+        function addVideo(uid, track, isLocal, isScreen) {
+            if(document.getElementById(`vid-wrap-${uid}`)) return;
+            const div = document.createElement('div');
+            div.className = 'video-item';
+            div.id = `vid-wrap-${uid}`;
+            div.innerHTML = `<div id="play-${uid}" class="video-player ${isScreen?'screen-share':''}"></div><div class="name-label">${isLocal ? 'Me' : 'User ' + uid}</div>`;
+            document.getElementById('video-grid').appendChild(div);
+            track.play(`play-${uid}`); updateGrid();
+        }
+        function removeVideo(uid) { const el = document.getElementById(`vid-wrap-${uid}`); if(el) el.remove(); updateGrid(); }
+        function updateGrid() {
+            const grid = document.getElementById('video-grid');
+            const count = grid.children.length;
+            grid.className = 'video-grid';
+            if(window.innerWidth > 768) {
+                if(count <= 1) grid.classList.add('grid-1');
+                else if(count === 2) grid.classList.add('grid-2');
+                else if(count <= 4) grid.classList.add('grid-4');
+                else grid.classList.add('grid-6');
+            }
+        }
+
+        function leaveRoom() {
+            if(localTracks.audio) localTracks.audio.close();
+            if(localTracks.video) localTracks.video.close();
+            if(localTracks.screen) localTracks.screen.close();
+            client.leave(); remoteUsers = {}; localTracks = {}; isScreenSharing = false;
+            document.getElementById('video-grid').innerHTML = ''; showScreen('dashboard');
+        }
+
+        function toggleMic() {
+            if(localTracks.audio) { localTracks.audio.setMuted(!localTracks.audio.muted); btnStyle('btn-mic', !localTracks.audio.muted); }
+        }
+        function toggleCam() {
+            if(localTracks.video) { localTracks.video.setMuted(!localTracks.video.muted); btnStyle('btn-cam', !localTracks.video.muted); }
+        }
+        function toggleSpeaker() {
+            isSpeakerOn = !isSpeakerOn; btnStyle('btn-vol', isSpeakerOn);
+            Object.values(remoteUsers).forEach(u => { if(u.audioTrack) u.audioTrack.setVolume(isSpeakerOn ? 100 : 0); });
+        }
+        
+        async function toggleShare() {
             try {
-                const querySnapshot = await getDocs(q);
-                let html = `<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">`;
-                
-                if (querySnapshot.empty) {
-                    mainContent.innerHTML = `<div class="text-center mt-10 text-gray-400">ยังไม่มีวิดีโอ (ลองกดปุ่มกล้องเพื่ออัปโหลด)</div>`;
-                    return;
-                }
-
-                querySnapshot.forEach((doc) => {
-                    const data = doc.data();
-                    // เราไม่มี thumbnail generator บน client เลยใช้รูป default หรือ channel img แทน
-                    html += `
-                        <div onclick="openPlayer('${doc.id}')" class="cursor-pointer group">
-                            <div class="relative aspect-video bg-gray-800 rounded-xl overflow-hidden">
-                                <video src="${data.videoUrl}#t=1" class="w-full h-full object-cover group-hover:scale-105 transition duration-200" muted preload="metadata"></video>
-                                <span class="absolute bottom-1 right-1 bg-black/80 px-1 rounded text-xs text-white">Video</span>
-                            </div>
-                            <div class="flex gap-3 mt-3">
-                                <img src="${data.channelImg}" class="w-9 h-9 rounded-full object-cover">
-                                <div>
-                                    <h3 class="font-bold text-sm text-white line-clamp-2 leading-tight">${data.title}</h3>
-                                    <p class="text-gray-400 text-xs mt-1 hover:text-white">${data.channelName}</p>
-                                    <p class="text-gray-400 text-xs">${data.views} การดู • ${timeAgo(data.createdAt)}</p>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                });
-                html += `</div>`;
-                
-                // ถ้าไม่ใช่หน้า Channel ให้ล้างแล้วใส่ใหม่ (ถ้าหน้า Channel ให้ append ต่อจากหัวข้อ)
-                if (mode === 'HOME') mainContent.innerHTML = html;
-                else mainContent.innerHTML = `<h2 class="text-2xl font-bold mb-6">วิดีโอในช่องของฉัน</h2>` + html;
-
-            } catch (err) {
-                console.error(err);
-                if(err.message.includes("index")) {
-                     mainContent.innerHTML = `<p class="text-red-500">System Note: ต้องสร้าง Index ใน Firestore ก่อนสำหรับการเรียงลำดับแบบผสม (ดู Console Log)</p>`;
+                if(!isScreenSharing) {
+                    localTracks.screen = await AgoraRTC.createScreenVideoTrack({
+                        encoderConfig: "720p_1" // Safe for mobile sharing
+                    });
+                    await client.unpublish(localTracks.video); removeVideo(client.uid);
+                    addVideo(client.uid, localTracks.screen, true, true);
+                    await client.publish(localTracks.screen);
+                    isScreenSharing = true; btnStyle('btn-screen', true);
+                    localTracks.screen.on("track-ended", toggleShare);
                 } else {
-                     mainContent.innerHTML = `<p class="text-red-500">โหลดข้อมูลไม่สำเร็จ (ตรวจสอบ Permission)</p>`;
+                    await client.unpublish(localTracks.screen); localTracks.screen.close();
+                    removeVideo(client.uid); addVideo(client.uid, localTracks.video, true, false);
+                    await client.publish(localTracks.video); isScreenSharing = false; btnStyle('btn-screen', false);
                 }
-            }
+            } catch(e) { console.error(e); alert("การแชร์หน้าจอถูกยกเลิก หรือไม่รองรับ"); }
         }
 
-        // --- PLAYER SYSTEM ---
-        window.openPlayer = async (videoId) => {
-            const overlay = document.getElementById('player-overlay');
-            const videoEl = document.getElementById('main-video-player');
-            
-            overlay.classList.remove('hidden');
-            
-            // เพิ่ม View
-            const vidRef = doc(db, "videos", videoId);
-            await updateDoc(vidRef, { views: increment(1) });
-
-            const snap = await getDoc(vidRef);
-            if(snap.exists()) {
-                const data = snap.data();
-                videoEl.src = data.videoUrl;
-                document.getElementById('player-title').innerText = data.title;
-                document.getElementById('player-channel-name').innerText = data.channelName;
-                document.getElementById('player-channel-img').src = data.channelImg;
-                document.getElementById('player-views-date').innerText = `${data.views + 1} การดู`;
-                
-                // จัดการปุ่ม Subscribe
-                const subBtn = document.getElementById('player-sub-btn');
-                subBtn.onclick = () => subscribe(data.uploaderId);
-            }
+        function btnStyle(id, on) {
+            const el = document.getElementById(id);
+            if(on) { el.classList.add('active'); el.classList.remove('off'); }
+            else { el.classList.add('off'); el.classList.remove('active'); }
         }
-
-        window.closePlayer = () => {
-            document.getElementById('player-overlay').classList.add('hidden');
-            document.getElementById('main-video-player').pause();
-            document.getElementById('main-video-player').src = "";
-        }
-
-        // --- SUBSCRIBE SYSTEM ---
-        window.subscribe = async (targetUserId) => {
-            if(!currentUser) return alert("เข้าสู่ระบบเพื่อติดตาม");
-            if(targetUserId === currentUser.uid) return alert("คุณติดตามตัวเองไม่ได้");
-            
-            alert(`กดติดตามช่องเจ้าของคลิปแล้ว! (บันทึกข้อมูล ID: ${targetUserId})`);
-            // ในระบบจริงต้องสร้าง Collection 'subscriptions' เพื่อเก็บความสัมพันธ์
-        }
-
-        function timeAgo(timestamp) {
-            if(!timestamp) return "";
-            return "เมื่อเร็วๆนี้"; 
-        }
-
     </script>
 </body>
 </html>
